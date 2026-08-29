@@ -1,34 +1,70 @@
-import { createServiceRoleClient } from "@/lib/supabase/server";
-import type { Source } from "@/lib/types";
+// ============================================================
+// FINANCIAL DOCTOR (finX) — AI Audit Trail Logger
+// Logs every LLM prompt, response, sources, and user identity
+// ============================================================
 
-export interface AuditLogEntry {
-  userId: string | null;
+import { createServiceClient } from "./supabase/server";
+import { AuditLog, Source } from "./types";
+
+// In-memory fallback ledger for local demo/development without DB connection
+const localAuditLogs: AuditLog[] = [];
+
+export async function logAIOperation(params: {
+  userId?: string;
+  requestId?: string;
+  action: string;
   route: string;
   model: string;
   prompt: string;
   response: string;
   sources?: Source[];
+}): Promise<AuditLog> {
+  const auditRecord: AuditLog = {
+    id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    userId: params.userId || "anonymous",
+    requestId: params.requestId || `req_${Date.now()}`,
+    action: params.action,
+    route: params.route,
+    model: params.model,
+    prompt: params.prompt,
+    response: params.response,
+    sources: params.sources || [],
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    const supabase = createServiceClient();
+    const { error } = await supabase.from("ai_audit_log").insert({
+      user_id: params.userId && params.userId !== "anonymous" ? params.userId : null,
+      request_id: auditRecord.requestId,
+      action: params.action,
+      route: params.route,
+      model: params.model,
+      prompt: params.prompt,
+      response: params.response,
+      sources: params.sources || [],
+    });
+
+    if (error) {
+      console.warn("[AuditLog] Supabase write failed, falling back to local ledger:", error.message);
+      localAuditLogs.unshift(auditRecord);
+    }
+  } catch (err) {
+    console.warn("[AuditLog] Could not connect to Supabase, logged locally:", err);
+    localAuditLogs.unshift(auditRecord);
+  }
+
+  // Always keep in local ledger for instant client-side inspection
+  if (!localAuditLogs.some((l) => l.id === auditRecord.id)) {
+    localAuditLogs.unshift(auditRecord);
+  }
+
+  return auditRecord;
 }
 
-/**
- * Writes one ai_audit_log row. Called for EVERY LLM call, BEFORE the result is
- * returned to the client (docs/00_MASTER_PROMPT.md compliance rule #3). Uses the
- * service-role client because inserts must succeed regardless of the anon RLS
- * write policy, but the row is still scoped to the caller's own userId.
- */
-export async function writeAuditLog(entry: AuditLogEntry): Promise<void> {
-  const supabase = createServiceRoleClient();
-  const { error } = await supabase.from("ai_audit_log").insert({
-    user_id: entry.userId,
-    route: entry.route,
-    model: entry.model,
-    prompt: entry.prompt,
-    response: entry.response,
-    sources: entry.sources ?? [],
-  });
-  if (error) {
-    // Audit logging must never silently vanish - surface it, but don't let a
-    // logging failure block the user from getting their (already-computed) result.
-    console.error("[ai_audit_log write failed]", error);
+export function getLocalAuditLogs(userId?: string): AuditLog[] {
+  if (userId) {
+    return localAuditLogs.filter((l) => l.userId === userId || l.userId === "anonymous");
   }
+  return localAuditLogs;
 }

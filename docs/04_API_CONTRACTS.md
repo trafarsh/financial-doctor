@@ -8,14 +8,21 @@ are `application/json`.
 ---
 
 ### `POST /api/portfolio/import`
-Import/replace the user's holdings and record a net-worth snapshot.
+**Replaces** the user's holdings and records a net-worth snapshot. This is a
+full replace, not an append: the request body is the user's complete
+assets+liabilities set after this call, not a delta. Both the CSV/Excel/manual
+import flow and the `/holdings` edit flow (which re-submits the full edited
+list on every change, per `12_SCREEN_LIST.md`) rely on this — an additive
+insert here would duplicate every untouched row on every edit or re-import.
 ```
 Request:  { assets: AssetInput[], liabilities: LiabilityInput[] }
           // *Input = same shape minus id/userId/lastUpdated (server sets these)
 Response: { snapshot: NetWorthSnapshot }
 Errors:   400 invalid rows (returns { errors: {row:number, reason:string}[] })
           401 not authenticated
-Side fx:  inserts assets + liabilities; APPENDS one net_worth_snapshots row
+Side fx:  DELETEs the user's existing assets+liabilities, INSERTs the new set,
+          then APPENDS one net_worth_snapshots row (the snapshot itself is
+          still append-only time series - see 02_DATA_MODEL.md)
 ```
 
 ### `GET /api/portfolio/networth-history`

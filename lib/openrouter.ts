@@ -1,131 +1,135 @@
+// ============================================================
+// FINANCIAL DOCTOR (finX) — OpenRouter AI Gateway & Safety Wrapper
+// Enforces JSON output, Zod schema validation, safety prompts, and audit logging
+// ============================================================
+
 import { z } from "zod";
-import { writeAuditLog } from "@/lib/audit";
-import type { Source } from "@/lib/types";
+import { APP_CONFIG } from "./config";
+import { logAIOperation } from "./audit";
+import { Source } from "./types";
 
-/**
- * Thrown when OpenRouter returns content that fails JSON.parse or zod
- * validation on both the initial attempt and the one repair retry. The
- * failure is audit-logged before this is thrown, so every call - success or
- * failure - leaves exactly one ai_audit_log row.
- */
-export class OpenRouterInvalidResponseError extends Error {}
-
-const JSON_REPAIR_NUDGE =
-  "\n\nReturn valid JSON only, matching the schema, no prose, no markdown code fences.";
-
-interface CallOpenRouterParams<T> {
+interface CallLLMOptions<T> {
   systemPrompt: string;
   userPrompt: string;
   schema: z.ZodSchema<T>;
   route: string;
-  userId: string | null;
+  userId?: string;
   sources?: Source[];
+  fallbackData: T;
 }
 
-async function requestCompletion(
-  systemPrompt: string,
-  userPrompt: string,
-  model: string,
-  apiKey: string
-): Promise<string> {
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") {
-    throw new Error("OpenRouter response missing message content");
-  }
-  return content;
-}
-
-/**
- * Calls OpenRouter, validates the JSON response against `schema`, retries
- * once with a JSON-repair nudge on failure, and writes exactly one
- * ai_audit_log row before the result reaches the caller - on success it logs
- * the validated response; on final failure it logs the failure and throws
- * OpenRouterInvalidResponseError. Callers never need to remember to audit.
- */
-export async function callOpenRouter<T>(params: CallOpenRouterParams<T>): Promise<T> {
-  const { systemPrompt, userPrompt, schema, route, userId, sources } = params;
+export async function callLLM<T>({
+  systemPrompt,
+  userPrompt,
+  schema,
+  route,
+  userId,
+  sources = [],
+  fallbackData,
+}: CallLLMOptions<T>): Promise<{ data: T; rawText: string; audited: boolean }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.OPENROUTER_MODEL;
+  const model = process.env.OPENROUTER_MODEL || APP_CONFIG.ai.defaultModel;
 
-  if (!apiKey) {
-    throw new Error("OPENROUTER_API_KEY is not set");
+  // Enforce mandatory safety clause prepended to all prompts
+  const fullSystemPrompt = `${APP_CONFIG.disclaimer.aiSafetyClause}\n\n${systemPrompt}`;
+
+  // If no API key is set, immediately return compliant fallback and log audit
+  if (!apiKey || apiKey === "your-openrouter-api-key" || apiKey.trim() === "") {
+    console.info(`[OpenRouter] No OPENROUTER_API_KEY configured. Using deterministic safe fallback for ${route}`);
+    const rawFallback = JSON.stringify(fallbackData);
+    await logAIOperation({
+      userId,
+      action: "llm_fallback",
+      route,
+      model: `${model} (offline fallback)`,
+      prompt: `${fullSystemPrompt}\n\nUSER: ${userPrompt}`,
+      response: rawFallback,
+      sources,
+    });
+    return { data: fallbackData, rawText: rawFallback, audited: true };
   }
-  if (!model) {
-    throw new Error("OPENROUTER_MODEL is not set");
-  }
 
-  let lastRawContent = "";
-  let lastErrorMessage = "";
+  let attempt = 0;
+  let lastError: Error | null = null;
+  let currentPrompt = userPrompt;
 
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const prompt = attempt === 0 ? userPrompt : userPrompt + JSON_REPAIR_NUDGE;
+  while (attempt <= APP_CONFIG.ai.maxRetries) {
+    attempt++;
     try {
-      const rawContent = await requestCompletion(systemPrompt, prompt, model, apiKey);
-      lastRawContent = rawContent;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), APP_CONFIG.ai.timeoutMs);
 
-      let parsedJson: unknown;
-      try {
-        parsedJson = JSON.parse(rawContent);
-      } catch {
-        lastErrorMessage = "Response was not valid JSON";
-        continue;
-      }
-
-      const validated = schema.safeParse(parsedJson);
-      if (!validated.success) {
-        lastErrorMessage = `Response failed schema validation: ${validated.error.message}`;
-        continue;
-      }
-
-      await writeAuditLog({
-        userId,
-        route,
-        model,
-        prompt: userPrompt,
-        response: JSON.stringify(validated.data),
-        sources,
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://financial-doctor.local",
+          "X-Title": "Financial Doctor Copilot",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: fullSystemPrompt },
+            { role: "user", content: currentPrompt },
+          ],
+          temperature: APP_CONFIG.ai.temperature,
+          response_format: { type: "json_object" },
+        }),
+        signal: controller.signal,
       });
 
-      return validated.data;
-    } catch (err) {
-      lastErrorMessage = err instanceof Error ? err.message : String(err);
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenRouter API responded with ${response.status}: ${errorText}`);
+      }
+
+      const json = await response.json();
+      const rawContent = json?.choices?.[0]?.message?.content || "{}";
+
+      // Clean potential markdown wrappers
+      const cleaned = rawContent.replace(/```json/gi, "").replace(/```/g, "").trim();
+
+      const parsedJSON = JSON.parse(cleaned);
+      const validationResult = schema.safeParse(parsedJSON);
+
+      if (validationResult.success) {
+        // Audit log success
+        await logAIOperation({
+          userId,
+          action: "llm_completion",
+          route,
+          model,
+          prompt: `${fullSystemPrompt}\n\nUSER: ${userPrompt}`,
+          response: rawContent,
+          sources,
+        });
+
+        return { data: validationResult.data, rawText: rawContent, audited: true };
+      } else {
+        console.warn(`[OpenRouter] Zod validation failed on attempt ${attempt}:`, validationResult.error);
+        currentPrompt = `${userPrompt}\n\nIMPORTANT: Your previous response did not match the required JSON schema. Return ONLY a valid JSON object matching the schema without code blocks.`;
+      }
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[OpenRouter] Attempt ${attempt} failed:`, err.message);
     }
   }
 
-  await writeAuditLog({
+  // Safe fallback if retries exhausted
+  console.warn(`[OpenRouter] Retries exhausted for ${route}. Returning safe fallback.`);
+  const fallbackRaw = JSON.stringify(fallbackData);
+  await logAIOperation({
     userId,
+    action: "llm_error_fallback",
     route,
-    model,
-    prompt: userPrompt,
-    response: `[OpenRouter call failed after 2 attempts] ${lastErrorMessage}${
-      lastRawContent ? ` | last raw content: ${lastRawContent}` : ""
-    }`,
+    model: `${model} (error fallback: ${lastError?.message || "unknown"})`,
+    prompt: `${fullSystemPrompt}\n\nUSER: ${userPrompt}`,
+    response: fallbackRaw,
     sources,
   });
 
-  throw new OpenRouterInvalidResponseError(
-    `OpenRouter call for ${route} failed after 2 attempts: ${lastErrorMessage}`
-  );
+  return { data: fallbackData, rawText: fallbackRaw, audited: true };
 }

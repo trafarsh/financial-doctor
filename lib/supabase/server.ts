@@ -1,61 +1,58 @@
-import { createServerClient } from "@supabase/ssr";
+// ============================================================
+// FINANCIAL DOCTOR (finX) — Supabase Server Client & Service Role
+// Used exclusively in Server Components, Actions, and Route Handlers
+// ============================================================
+
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 /**
- * Session-aware server client (anon key + caller's cookies). Respects RLS.
- * Use in API routes / server components for all normal reads/writes.
+ * Creates a server-side Supabase client scoped to the current user's session.
+ * UserId must always be resolved via await supabase.auth.getUser()
  */
-export async function createServerSupabaseClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // called from a Server Component render; middleware refreshes the session instead
-          }
-        },
+export function createClient() {
+  const cookieStore = cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-project.supabase.co";
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
+
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value;
       },
-    }
-  );
+      set(name: string, value: string, options: CookieOptions) {
+        try {
+          cookieStore.set({ name, value, ...options });
+        } catch {
+          // The `set` method was called from a Server Component.
+          // This can be ignored if you have middleware refreshing user sessions.
+        }
+      },
+      remove(name: string, options: CookieOptions) {
+        try {
+          cookieStore.set({ name, value: "", ...options });
+        } catch {
+          // The `delete` method was called from a Server Component.
+        }
+      },
+    },
+  });
 }
 
 /**
- * Service-role client. BYPASSES RLS — server code only, never import client-side.
- * Still explicitly filter by the session userId in every query; service-role is
- * for writes the anon policy can't express (e.g. audit log inserts), not a
- * license to skip scoping.
+ * Creates a privileged service-role client that bypasses RLS for system operations
+ * (e.g. audit logs, reference snippets queries).
+ * NEVER expose to the browser bundle.
  */
-export function createServiceRoleClient() {
-  return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
-}
+export function createServiceClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-project.supabase.co";
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-service-key";
 
-/**
- * Resolves the authenticated user's id from the server-side session.
- * NEVER accept userId from a request body/query param instead of this.
- * Throws if there is no session — callers should catch and return 401.
- */
-export async function requireUserId(): Promise<string> {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error("UNAUTHENTICATED");
-  }
-  return user.id;
+  return createSupabaseClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
