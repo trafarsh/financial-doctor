@@ -1,15 +1,18 @@
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { callOpenRouter } from '@/lib/openrouter';
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireUserId } from "@/lib/supabase/server";
+import { retrieveContext } from "@/lib/rag/retrieve";
+import { callOpenRouter, OpenRouterInvalidResponseError } from "@/lib/openrouter";
+import { writeAuditLog } from "@/lib/audit";
+import type { ScamCheckResult } from "@/lib/types";
 
 const requestSchema = z.object({
-  claimText: z.string().min(1).max(5000),
+  claimText: z.string().min(1).max(2000),
 });
 
 const responseSchema = z.object({
-  claimText: z.string(),
-  verdict: z.enum(['likely_credible', 'unverifiable', 'likely_misleading', 'likely_scam']),
-  explanation: z.string(),
+  verdict: z.enum(["likely_credible", "unverifiable", "likely_misleading", "likely_scam"]),
+  explanation: z.string().min(1),
   sources: z.array(
     z.object({
       title: z.string(),
@@ -19,79 +22,139 @@ const responseSchema = z.object({
   ),
 });
 
-const SYSTEM_PROMPT = `You are the AI financial-literacy engine for financial-doctor.
-You provide educational financial analysis and explanations.
-You are not a registered investment adviser.
-Do not provide personalized buy, sell, hold, or investment instructions.
-Do not tell a user which security they should purchase or sell.
-Do not guarantee returns or future market performance.
-Clearly distinguish facts, retrieved information, assumptions, calculations, and illustrative scenarios.
-Never fabricate sources, URLs, statistics, prices, companies, regulations, or financial claims.
-Use retrieved sources for factual claims.
-If reliable evidence is unavailable, state that the information is unverifiable.
-When discussing decisions, provide educational context, trade-offs, risks, and questions that could be discussed with a registered financial adviser.
+// docs/07_LLM_PROMPTS.md §0 - prepended verbatim to every system prompt.
+const SHARED_COMPLIANCE_CLAUSE = `You are part of a financial-literacy and decision-support tool. You are NOT a
+registered investment adviser. Absolute rules:
+- Never tell the user to buy, sell, hold, or allocate any specific asset, amount,
+  or percentage. No personalized investment directives of any kind.
+- Frame everything as education, explanation, and questions the user could raise
+  with a licensed adviser.
+- Never invent figures. Use only numbers explicitly provided to you.
+- Respond with ONLY the JSON object specified. No prose, no markdown, no code
+  fences.`;
 
-For this specific task: Analyze the provided financial claim to determine if it is a scam, misleading, credible, or unverifiable. Return a JSON object matching this schema:
-{
-  "claimText": "string",
-  "verdict": "likely_credible" | "unverifiable" | "likely_misleading" | "likely_scam",
-  "explanation": "string",
-  "sources": [{ "title": "string", "url": "string", "snippet": "string" }]
-}
-IMPORTANT: If you have no sources, the verdict MUST be "unverifiable".`;
+// docs/07_LLM_PROMPTS.md §2 - scam / claim check prompt, verbatim.
+const SCAM_CHECK_PROMPT = `You assess whether a financial CLAIM is credible, using ONLY the provided sources.
+Rules:
+- If the sources do not support an assessment, set verdict to "unverifiable".
+- You may never output "likely_credible", "likely_misleading", or "likely_scam"
+  unless at least one provided source substantiates it.
+- Cite the sources you used in the sources array (copy from those provided; do not
+  fabricate URLs).
+- Explanation is neutral and educational, not a directive.
+Verdict ∈ ["likely_credible","unverifiable","likely_misleading","likely_scam"].
+Output JSON:
+{ "verdict": string, "explanation": string,
+  "sources": [{ "title": string, "url": string, "snippet": string }] }`;
 
-// Mock retrieval for hackathon
-async function retrieveSources(query: string) {
-  // In a real implementation, this would call a search API or vector database.
-  // For now, we return empty to force 'unverifiable' on unknown claims,
-  // or a mock source for a known claim test case.
-  if (query.toLowerCase().includes('guaranteed 50% return')) {
-    return [
-      {
-        title: 'SEBI Guidelines on Investment Guarantees',
-        url: 'https://www.sebi.gov.in/mock-guidelines',
-        snippet: 'No registered entity can guarantee returns in the stock market.',
-      },
-    ];
-  }
-  return [];
-}
+const SYSTEM_PROMPT = `${SHARED_COMPLIANCE_CLAUSE}\n\n${SCAM_CHECK_PROMPT}`;
+
+const ROUTE = "/api/ai/scam-check";
 
 export async function POST(req: Request) {
+  let userId: string;
+  try {
+    userId = await requireUserId();
+  } catch {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  let claimText: string;
   try {
     const body = await req.json();
-    const parsedBody = requestSchema.parse(body);
+    ({ claimText } = requestSchema.parse(body));
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input", details: error.issues },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
 
-    const sources = await retrieveSources(parsedBody.claimText);
+  try {
+    const retrievedSources = await retrieveContext(claimText);
 
-    let prompt = `Analyze this claim: "${parsedBody.claimText}"\n\n`;
-    if (sources.length > 0) {
-      prompt += `Use these sources:\n${JSON.stringify(sources, null, 2)}`;
-    } else {
-      prompt += `No external sources available.`;
+    // A5/A0 guard: if retrieval found nothing, the LLM is skipped entirely and
+    // the verdict is forced to "unverifiable" IN CODE - the model never gets a
+    // chance to police this itself. A check still happened, so it still gets
+    // an audit row.
+    if (retrievedSources.length === 0) {
+      const result: ScamCheckResult = {
+        claimText,
+        verdict: "unverifiable",
+        explanation:
+          "We couldn't find a supporting source, so this claim is marked unverifiable rather than judged.",
+        sources: [],
+      };
+
+      await writeAuditLog({
+        userId,
+        route: ROUTE,
+        model: "n/a (no sources retrieved - LLM skipped)",
+        prompt: claimText,
+        response: JSON.stringify(result),
+        sources: [],
+      });
+
+      return NextResponse.json({ result });
     }
 
-    const aiResult = await callOpenRouter(SYSTEM_PROMPT, prompt, responseSchema);
+    const userPrompt = `Claim to assess: "${claimText}"\n\nRetrieved sources (use ONLY these; do not invent others):\n${JSON.stringify(
+      retrievedSources,
+      null,
+      2
+    )}`;
 
-    // Enforce logic: if no sources, verdict must be unverifiable (unless the AI already did this, but enforce it)
-    if (aiResult.sources.length === 0 && aiResult.verdict !== 'unverifiable') {
-      aiResult.verdict = 'unverifiable';
-      aiResult.explanation = 'No reliable sources could be found to verify this claim. Proceed with caution.';
-    }
-
-    // TODO: Write to AI audit log (Mocked for now)
-    console.log('[AUDIT LOG] Scam check:', {
-      prompt: parsedBody.claimText,
-      verdict: aiResult.verdict,
-      timestamp: new Date().toISOString(),
+    const aiResult = await callOpenRouter({
+      systemPrompt: SYSTEM_PROMPT,
+      userPrompt,
+      schema: responseSchema,
+      route: ROUTE,
+      userId,
+      sources: retrievedSources,
     });
 
-    return NextResponse.json({ result: aiResult });
-  } catch (error) {
-    console.error('Scam check error:', error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: (error as any).errors }, { status: 400 });
+    // A5/step 5 post-validate: drop any source URL the model returned that
+    // wasn't actually in the retrieved set (exact URL equality). If that
+    // empties the array, re-guard by forcing "unverifiable".
+    const retrievedUrls = new Set(retrievedSources.map((s) => s.url));
+    let verdict = aiResult.verdict;
+    let sources = aiResult.sources.filter((s) => retrievedUrls.has(s.url));
+    let explanation = aiResult.explanation;
+
+    if (sources.length === 0) {
+      verdict = "unverifiable";
+      sources = [];
+      if (aiResult.sources.length > 0) {
+        // The model cited sources but none were in the retrieved set -
+        // fabricated/repaired away. Replace with a safe, accurate explanation.
+        explanation =
+          "The AI's cited sources could not be verified against retrieved evidence, so this claim is marked unverifiable.";
+      }
     }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+
+    const result: ScamCheckResult = {
+      claimText,
+      verdict,
+      explanation,
+      sources,
+    };
+
+    return NextResponse.json({ result });
+  } catch (error) {
+    if (error instanceof OpenRouterInvalidResponseError) {
+      const result: ScamCheckResult = {
+        claimText,
+        verdict: "unverifiable",
+        explanation:
+          "We couldn't generate a reliable assessment right now, so this claim is marked unverifiable.",
+        sources: [],
+      };
+      return NextResponse.json({ result });
+    }
+    console.error("[scam-check] unexpected error", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

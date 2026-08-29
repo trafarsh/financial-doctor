@@ -1,98 +1,147 @@
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { callOpenRouter } from '@/lib/openrouter';
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireUserId, createServerSupabaseClient } from "@/lib/supabase/server";
+import { callOpenRouter, OpenRouterInvalidResponseError } from "@/lib/openrouter";
+import { computeNetWorth, projectNetWorth } from "@/lib/finance";
+import type { Asset, Liability, SimulationScenario } from "@/lib/types";
 
+// userId is intentionally NOT part of this schema - it is derived from the
+// authenticated session via requireUserId(), never trusted from the body.
 const requestSchema = z.object({
-  userId: z.string(),
-  assumptions: z.record(z.string(), z.number()),
-  years: z.number().positive().max(100),
+  assumptions: z.object({
+    monthlyInvestment: z.number(),
+    annualReturnPct: z.number(),
+  }),
+  years: z.number().int().min(1).max(40),
 });
 
 const responseSchema = z.object({
-  explanation: z.string(),
+  explanation: z.string().min(1),
 });
 
-const SYSTEM_PROMPT = `You are the AI financial-literacy engine for financial-doctor.
-You provide educational financial analysis and explanations.
-You are not a registered investment adviser.
-Do not provide personalized buy, sell, hold, or investment instructions.
-Do not tell a user which security they should purchase or sell.
-Do not guarantee returns or future market performance.
-Clearly distinguish facts, retrieved information, assumptions, calculations, and illustrative scenarios.
-Never fabricate sources, URLs, statistics, prices, companies, regulations, or financial claims.
-When discussing decisions, provide educational context, trade-offs, risks, and questions that could be discussed with a registered financial adviser.
+// docs/07_LLM_PROMPTS.md §0 - prepended verbatim to every system prompt.
+const SHARED_COMPLIANCE_CLAUSE = `You are part of a financial-literacy and decision-support tool. You are NOT a
+registered investment adviser. Absolute rules:
+- Never tell the user to buy, sell, hold, or allocate any specific asset, amount,
+  or percentage. No personalized investment directives of any kind.
+- Frame everything as education, explanation, and questions the user could raise
+  with a licensed adviser.
+- Never invent figures. Use only numbers explicitly provided to you.
+- Respond with ONLY the JSON object specified. No prose, no markdown, no code
+  fences.`;
 
-For this task: Given the financial simulation inputs and the deterministic result computed by the system, explain the result to the user.
-Return a JSON object: { "explanation": "string" }
-The explanation must explicitly state that the simulation is illustrative, not guaranteed, and not personalized investment advice.
-Do not recalculate the math. Use the provided projected net worth.`;
+// docs/07_LLM_PROMPTS.md §3 - simulation explanation prompt, verbatim.
+const SIMULATION_PROMPT = `Explain this illustrative projection in 2–3 sentences for a non-expert. Make clear
+it is a simple model based on the stated assumptions, not a prediction, guarantee,
+or recommendation. Do not suggest changing the assumptions in any specific
+direction. Output JSON: { "explanation": string }`;
+
+const SYSTEM_PROMPT = `${SHARED_COMPLIANCE_CLAUSE}\n\n${SIMULATION_PROMPT}`;
+
+const ROUTE = "/api/ai/simulate";
+
+const FALLBACK_EXPLANATION =
+  "This is a simple illustrative projection based on your stated assumptions — not a prediction or guarantee.";
 
 export async function POST(req: Request) {
+  let userId: string;
+  try {
+    userId = await requireUserId();
+  } catch {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  let assumptions: { monthlyInvestment: number; annualReturnPct: number };
+  let years: number;
   try {
     const body = await req.json();
-    const parsedBody = requestSchema.parse(body);
-
-    const { userId, assumptions, years } = parsedBody;
-
-    // Deterministic arithmetic logic
-    const baselineNetWorth = (assumptions as Record<string, number>).baselineNetWorth || 0;
-    const monthlyContribution = (assumptions as Record<string, number>).monthlyContribution || 0;
-    const assumedAnnualGrowthRate = (assumptions as Record<string, number>).annualGrowthRate || 0.05; // default 5%
-
-    // Basic future value calculation
-    let projectedNetWorth = baselineNetWorth;
-    for (let i = 0; i < years; i++) {
-      projectedNetWorth = projectedNetWorth * (1 + assumedAnnualGrowthRate) + (monthlyContribution * 12);
+    ({ assumptions, years } = requestSchema.parse(body));
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input", details: error.issues },
+        { status: 400 }
+      );
     }
-    
-    // Check for NaN or Infinity
-    if (!Number.isFinite(projectedNetWorth)) {
-      throw new Error("Invalid calculation result");
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    const [{ data: assetRows, error: assetsError }, { data: liabilityRows, error: liabilitiesError }] =
+      await Promise.all([
+        supabase.from("assets").select("*").eq("user_id", userId),
+        supabase.from("liabilities").select("*").eq("user_id", userId),
+      ]);
+
+    if (assetsError || liabilitiesError) {
+      console.error("[simulate] failed to load holdings", assetsError, liabilitiesError);
+      return NextResponse.json({ error: "Failed to load holdings" }, { status: 500 });
     }
 
-    const prompt = `Simulation inputs:
-Baseline Net Worth: ${baselineNetWorth}
-Monthly Contribution: ${monthlyContribution}
-Annual Growth Rate: ${assumedAnnualGrowthRate * 100}%
-Years: ${years}
+    const assets: Asset[] = (assetRows ?? []).map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      type: row.type,
+      name: row.name,
+      value: Number(row.value),
+      quantity: row.quantity != null ? Number(row.quantity) : undefined,
+      lastUpdated: row.last_updated,
+    }));
 
-Computed Projected Net Worth: ${projectedNetWorth.toFixed(2)}
+    const liabilities: Liability[] = (liabilityRows ?? []).map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      type: row.type,
+      name: row.name,
+      amount: Number(row.amount),
+      interestRate: row.interest_rate != null ? Number(row.interest_rate) : undefined,
+    }));
 
-Please explain this illustrative scenario to the user.`;
+    // All money math runs in /lib/finance.ts - never reimplemented here, never
+    // computed by the LLM.
+    const { netWorth: baselineNetWorth } = computeNetWorth(assets, liabilities);
+    const { projectedNetWorth, yearlyPoints } = projectNetWorth(baselineNetWorth, assumptions, years);
 
-    const aiResult = await callOpenRouter<{ explanation: string }>(SYSTEM_PROMPT, prompt, responseSchema);
+    let explanation = FALLBACK_EXPLANATION;
+    try {
+      const userPrompt = `Baseline net worth: ${baselineNetWorth}
+Assumptions: monthly investment = ${assumptions.monthlyInvestment}, annual return = ${assumptions.annualReturnPct}%
+Projection years: ${years}
+Computed projected net worth (already calculated - do not recompute): ${projectedNetWorth}
 
-    const scenario = {
+Explain this illustrative projection.`;
+
+      const aiResult = await callOpenRouter({
+        systemPrompt: SYSTEM_PROMPT,
+        userPrompt,
+        schema: responseSchema,
+        route: ROUTE,
+        userId,
+      });
+      explanation = aiResult.explanation;
+    } catch (error) {
+      if (error instanceof OpenRouterInvalidResponseError) {
+        explanation = FALLBACK_EXPLANATION;
+      } else {
+        throw error;
+      }
+    }
+
+    const scenario: SimulationScenario = {
       userId,
       baselineNetWorth,
       assumptions,
       projectedNetWorth,
       projectionYears: years,
-      explanation: aiResult.explanation, // Actually the contract doesn't explicitly have explanation inside scenario or outside, let's assume it's part of the scenario or AI result.
-      // Wait, CONTRACTS.md has SimulationScenario which only has:
-      // userId, baselineNetWorth, assumptions, projectedNetWorth, projectionYears.
-      // But we need the explanation somewhere! I will just add explanation to the response or to the scenario.
+      yearlyPoints,
+      explanation,
     };
 
-    // TODO: Write to AI audit log
-    console.log('[AUDIT LOG] Simulation:', {
-      userId,
-      assumptions,
-      years,
-      timestamp: new Date().toISOString(),
-    });
-
-    return NextResponse.json({
-      scenario: {
-        ...scenario,
-        explanation: aiResult.explanation
-      }
-    });
+    return NextResponse.json({ scenario });
   } catch (error) {
-    console.error('Simulation error:', error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: (error as any).errors }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("[simulate] unexpected error", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
