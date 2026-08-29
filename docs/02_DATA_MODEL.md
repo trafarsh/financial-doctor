@@ -81,13 +81,16 @@ export interface SimulationScenario {
   projectedNetWorth: number;
   projectionYears: number;
   yearlyPoints: { year: number; value: number }[];  // for the chart
+  explanation: string;      // LLM, non-advisory, "illustrative" framing
 }
 ```
 
-Two changes vs. the original spec, both required for the demo to actually work:
+Three changes vs. the original spec, all required for the demo to actually work:
 `NetWorthSnapshot.id` (so snapshots are individual time-series rows, enabling the
-trend chart) and `SimulationScenario.yearlyPoints` (so the projection can be plotted,
-not just stated as one number).
+trend chart), `SimulationScenario.yearlyPoints` (so the projection can be plotted,
+not just stated as one number), and `SimulationScenario.explanation` (the contract
+calls for an LLM explanation per `07_LLM_PROMPTS.md` §3 but the original shape had
+nowhere to put it).
 
 ## 2. Database tables
 

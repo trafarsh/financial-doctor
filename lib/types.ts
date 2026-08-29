@@ -1,13 +1,21 @@
+export type AssetType =
+  | "stock"
+  | "mutual_fund"
+  | "bank"
+  | "real_estate"
+  | "gold"
+  | "other";
+
+export type LiabilityType =
+  | "loan"
+  | "credit_card"
+  | "mortgage"
+  | "other";
+
 export interface Asset {
   id: string;
   userId: string;
-  type:
-    | "stock"
-    | "mutual_fund"
-    | "bank"
-    | "real_estate"
-    | "gold"
-    | "other";
+  type: AssetType;
   name: string;
   value: number;
   quantity?: number;
@@ -17,17 +25,14 @@ export interface Asset {
 export interface Liability {
   id: string;
   userId: string;
-  type:
-    | "loan"
-    | "credit_card"
-    | "mortgage"
-    | "other";
+  type: LiabilityType;
   name: string;
   amount: number;
   interestRate?: number;
 }
 
 export interface NetWorthSnapshot {
+  id: string;
   userId: string;
   totalAssets: number;
   totalLiabilities: number;
@@ -36,19 +41,24 @@ export interface NetWorthSnapshot {
 }
 
 export interface RiskAnalysis {
+  id: string;
   userId: string;
   riskScore: number;
   diversificationScore: number;
   explanation: string;
   flags: AnomalyFlag[];
+  computedAt: string;
 }
 
+export type AnomalyType =
+  | "concentration"
+  | "unusual_activity"
+  | "high_debt_ratio"
+  | "low_liquidity"
+  | "other";
+
 export interface AnomalyFlag {
-  type:
-    | "concentration"
-    | "unusual_activity"
-    | "high_debt_ratio"
-    | "other";
+  type: AnomalyType;
   severity:
     | "low"
     | "medium"
@@ -62,15 +72,17 @@ export interface Source {
   snippet?: string;
 }
 
+export type ScamVerdict =
+  | "likely_credible"
+  | "unverifiable"
+  | "likely_misleading"
+  | "likely_scam";
+
 export interface ScamCheckResult {
   claimText: string;
-  verdict:
-    | "likely_credible"
-    | "unverifiable"
-    | "likely_misleading"
-    | "likely_scam";
+  verdict: ScamVerdict;
   explanation: string;
-  sources: Source[];
+  sources: Source[]; // if empty, verdict MUST be "unverifiable"
 }
 
 export interface SimulationScenario {
@@ -79,4 +91,6 @@ export interface SimulationScenario {
   assumptions: Record<string, number>;
   projectedNetWorth: number;
   projectionYears: number;
+  yearlyPoints: { year: number; value: number }[];
+  explanation: string;
 }
