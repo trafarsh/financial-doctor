@@ -221,7 +221,49 @@ const DEMO_EVENTS: MarketEvent[] = [
   },
 ];
 
+const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_API_KEY || "QBKYIHU7C18I02I8";
+
 export class DefaultMarketProvider implements IMarketProvider {
+  private async fetchAlphaVantageQuote(symbol: string): Promise<AssetPrice | null> {
+    try {
+      const cleanSymbol = symbol.toUpperCase().replace(".NS", "");
+      const res = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${cleanSymbol}&apikey=${ALPHA_VANTAGE_KEY}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      
+      if (data["Note"] || data["Information"] || !data["Global Quote"]) {
+        console.warn("[Market API] Alpha Vantage rate limit or error:", data);
+        return null;
+      }
+      
+      const quote = data["Global Quote"];
+      if (!quote["05. price"]) return null;
+
+      const price = Number(quote["05. price"]);
+      const change = Number(quote["09. change"]);
+      const changePct = Number(quote["10. change percent"].replace("%", ""));
+      const high = Number(quote["03. high"]);
+      const low = Number(quote["04. low"]);
+      const volume = Number(quote["06. volume"]);
+      
+      return {
+        symbol: cleanSymbol,
+        name: cleanSymbol,
+        price,
+        change24h: Number(change.toFixed(2)),
+        change24hPct: Number(changePct.toFixed(2)),
+        high24h: Number(high.toFixed(2)),
+        low24h: Number(low.toFixed(2)),
+        volume,
+        updatedAt: new Date().toISOString(),
+        source: "Alpha Vantage API Feed",
+      };
+    } catch (e) {
+      console.warn("[Market API] Alpha Vantage fetch error:", e);
+      return null;
+    }
+  }
+
   private async fetchYahooMeta(ticker: string) {
     try {
       const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`);
@@ -235,7 +277,12 @@ export class DefaultMarketProvider implements IMarketProvider {
 
   async getQuote(symbol: string): Promise<AssetPrice | null> {
     const clean = symbol.toUpperCase().trim();
-    // Try to get live quote from Yahoo Finance
+    
+    // 1. Try Alpha Vantage first
+    const avQuote = await this.fetchAlphaVantageQuote(clean);
+    if (avQuote) return avQuote;
+
+    // 2. Fall back to Yahoo Finance
     const liveMeta = await this.fetchYahooMeta(clean.includes(".") ? clean : `${clean}.NS`);
     if (liveMeta) {
       const prevClose = liveMeta.chartPreviousClose || liveMeta.regularMarketPrice;
@@ -251,7 +298,7 @@ export class DefaultMarketProvider implements IMarketProvider {
         low24h: liveMeta.regularMarketDayLow || liveMeta.regularMarketPrice,
         volume: liveMeta.regularMarketVolume || 0,
         updatedAt: new Date().toISOString(),
-        source: "Yahoo Finance API Feed",
+        source: "Yahoo Finance API Feed (Fallback)",
       };
     }
 
