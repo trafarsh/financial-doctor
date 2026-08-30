@@ -23,7 +23,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-8 w-full max-w-4xl">
+    <div className="flex flex-col gap-6 px-4 py-6 md:px-8 md:py-8 w-full max-w-4xl">
       {/* Topbar */}
       <div className="flex items-center gap-4 pb-4 border-b-2 border-divider">
         <div className="kicker">Portfolio report</div>
@@ -42,7 +42,7 @@ export default function ReportsPage() {
 
       {report && (
         <div className="bg-neutral-200 border-2 border-divider px-6 py-8 sm:px-8">
-          <div className="max-w-[860px] mx-auto bg-bg border-2 border-divider px-8 py-14 sm:px-16">
+          <div className="max-w-[860px] mx-auto bg-bg border-2 border-divider px-4 py-8 sm:px-16 sm:py-14">
             {/* Report header */}
             <div className="kicker-accent mb-3">finX Portfolio report</div>
             <h1 className="text-4xl font-heading font-extrabold tracking-tight text-ink mb-2">

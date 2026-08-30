@@ -66,7 +66,7 @@ export default function AlertsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-8 w-full max-w-6xl">
+    <div className="flex flex-col gap-6 px-4 py-6 md:px-8 md:py-8 w-full max-w-6xl">
       {/* Topbar */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-4 border-b-2 border-divider mb-6">
         <div className="kicker">Alerts</div>

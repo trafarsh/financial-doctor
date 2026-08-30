@@ -79,7 +79,7 @@ export default function CopilotPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Topbar */}
-      <div className="flex items-center gap-4 px-8 py-4 border-b-2 border-divider">
+      <div className="flex items-center gap-4 px-4 py-3 md:px-8 md:py-4 border-b-2 border-divider">
         <div className="font-heading font-800 text-base flex items-center gap-2">
           <Cpu className="w-4 h-4 text-accent" />
           Copilot
@@ -102,7 +102,7 @@ export default function CopilotPage() {
       </div>
 
       {/* Suggested Quick Questions */}
-      <div className="px-8 pt-5 flex flex-col gap-2">
+      <div className="px-4 pt-4 md:px-8 md:pt-5 flex flex-col gap-2">
         <span className="kicker flex items-center gap-1.5">
           <Sparkles className="w-3 h-3 text-accent" />
           Suggested research queries
@@ -121,7 +121,7 @@ export default function CopilotPage() {
       </div>
 
       {/* Messages */}
-      <div className="px-8 py-7 flex flex-col gap-6 flex-1 overflow-auto">
+      <div className="px-4 py-5 md:px-8 md:py-7 flex flex-col gap-6 flex-1 overflow-auto">
         {messages.map((msg) => {
           const isAssistant = msg.role === "assistant";
 

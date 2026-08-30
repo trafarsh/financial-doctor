@@ -191,7 +191,7 @@ function SimulatorContent() {
   const lastPoint = scenario?.yearlyPoints[scenario.yearlyPoints.length - 1];
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-8 w-full max-w-6xl">
+    <div className="flex flex-col gap-6 px-4 py-6 md:px-8 md:py-8 w-full max-w-6xl">
       {/* Page Header */}
       <div className="border-b-2 border-divider pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

@@ -31,7 +31,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-8 w-full max-w-6xl">
+    <div className="flex flex-col gap-6 px-4 py-6 md:px-8 md:py-8 w-full max-w-6xl">
       <div className="pb-4 border-b-2 border-divider mb-8">
         <div className="kicker">Settings</div>
         <h1 className="text-2xl font-heading font-extrabold text-ink mt-1">Application settings</h1>
