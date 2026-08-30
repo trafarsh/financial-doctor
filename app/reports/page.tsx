@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FileText, Download, Printer, ShieldAlert, Sparkles, CheckCircle2, BookOpen } from "lucide-react";
+import { Printer, CheckCircle2 } from "lucide-react";
 import { ComprehensiveReport } from "@/lib/types";
 
 export default function ReportsPage() {
@@ -23,133 +23,120 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
-      {/* Header */}
-      <div className="border-b border-hairline-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-accent-blue/15 border border-accent-blue/30 flex items-center justify-center">
-              <FileText className="w-4 h-4 text-accent-blue" />
-            </div>
-            <h1 className="text-2xl font-extrabold text-white">Portfolio Intelligence Report</h1>
-          </div>
-          <p className="text-xs text-muted-strong mt-0.5">
-            Structured 12-section financial health & regulatory compliance audit summary.
-          </p>
+    <div className="flex flex-col">
+      {/* Topbar */}
+      <div className="flex items-center gap-4 pb-4 border-b-2 border-divider mb-8">
+        <div className="kicker">Portfolio report</div>
+        <div className="ml-auto flex gap-2">
+          <button onClick={handlePrint} className="btn btn-secondary">
+            <Printer className="w-4 h-4" />
+            <span>Print</span>
+          </button>
+          <button onClick={handlePrint} className="btn btn-primary">
+            Export PDF →
+          </button>
         </div>
-
-        <button
-          onClick={handlePrint}
-          className="bg-surface-card hover:bg-surface-elevated border border-hairline-dark hover:border-primary text-xs font-semibold text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors self-start sm:self-auto"
-        >
-          <Printer className="w-4 h-4 text-primary" />
-          <span>Print / Export PDF</span>
-        </button>
       </div>
 
-      {report && (
-        <div className="double-bezel p-8 space-y-8 bg-canvas-dark border border-hairline-dark">
-          {/* Section 1: Executive Overview */}
-          <div className="border-b border-hairline-dark pb-6 space-y-3">
-            <div className="flex justify-between text-xs text-muted">
-              <span>Report Reference: {report.id}</span>
-              <span>Generated: {new Date(report.generatedAt).toLocaleString("en-IN")}</span>
-            </div>
-            <h2 className="text-xl font-bold text-white">1. Executive Balance Sheet Summary</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-              <div className="p-4 bg-ink rounded-lg border border-hairline-dark">
-                <span className="text-[10px] text-muted-strong uppercase tracking-wider block">Net Worth</span>
-                <span className="text-xl font-bold font-mono text-primary">
-                  ₹{report.portfolioSummary.netWorth.toLocaleString("en-IN")}
-                </span>
-              </div>
-              <div className="p-4 bg-ink rounded-lg border border-hairline-dark">
-                <span className="text-[10px] text-muted-strong uppercase tracking-wider block">Gross Assets</span>
-                <span className="text-xl font-bold font-mono text-trading-up">
-                  ₹{report.portfolioSummary.totalAssets.toLocaleString("en-IN")}
-                </span>
-              </div>
-              <div className="p-4 bg-ink rounded-lg border border-hairline-dark">
-                <span className="text-[10px] text-muted-strong uppercase tracking-wider block">Gross Liabilities</span>
-                <span className="text-xl font-bold font-mono text-trading-down">
-                  ₹{report.portfolioSummary.totalLiabilities.toLocaleString("en-IN")}
-                </span>
-              </div>
-            </div>
-          </div>
+      {loading && <div className="kicker">Loading report…</div>}
 
-          {/* Section 2: Asset Allocation */}
-          <div className="border-b border-hairline-dark pb-6 space-y-3">
-            <h2 className="text-lg font-bold text-white">2. Asset Class Allocation</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {report && (
+        <div className="bg-neutral-200 -mx-6 px-6 py-8 sm:-mx-8 sm:px-8">
+          <div className="max-w-[860px] mx-auto bg-bg border-2 border-divider px-8 py-14 sm:px-16">
+            {/* Report header */}
+            <div className="kicker-accent mb-3">finX Portfolio report</div>
+            <h1 className="text-4xl font-heading font-extrabold tracking-tight text-ink mb-2">
+              Financial health summary
+            </h1>
+            <div className="flex gap-4 py-2.5 border-t-2 border-b-2 border-divider text-[11px] font-heading font-semibold tracking-wide uppercase text-muted mb-7">
+              <span>Report Reference: {report.id}</span>
+              <span>{new Date(report.generatedAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}</span>
+              <span>Auto-generated</span>
+            </div>
+
+            {/* Section 1: Balance sheet */}
+            <h2 className="text-xl font-heading font-bold text-ink mb-3">1. Balance sheet summary</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 border-2 border-ink mb-6">
+              <div className="p-4 border-b sm:border-b-0 sm:border-r border-divider">
+                <div className="text-[10px] tracking-wider uppercase text-muted font-semibold mb-1.5">Total assets</div>
+                <div className="font-heading font-extrabold text-xl">₹{report.portfolioSummary.totalAssets.toLocaleString("en-IN")}</div>
+              </div>
+              <div className="p-4 border-b sm:border-b-0 sm:border-r border-divider">
+                <div className="text-[10px] tracking-wider uppercase text-muted font-semibold mb-1.5">Total liabilities</div>
+                <div className="font-heading font-extrabold text-xl">₹{report.portfolioSummary.totalLiabilities.toLocaleString("en-IN")}</div>
+              </div>
+              <div className="p-4">
+                <div className="text-[10px] tracking-wider uppercase text-muted font-semibold mb-1.5">Net worth</div>
+                <div className="font-heading font-extrabold text-xl">₹{report.portfolioSummary.netWorth.toLocaleString("en-IN")}</div>
+              </div>
+            </div>
+
+            {/* Section: Asset allocation */}
+            <h2 className="text-xl font-heading font-bold text-ink mb-3">2. Asset class allocation</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
               {report.assetAllocation.map((item, idx) => (
-                <div key={idx} className="p-3 bg-ink rounded-lg border border-hairline-dark flex justify-between items-center text-xs">
-                  <span className="text-muted-strong">{item.type}</span>
-                  <span className="font-mono font-bold text-white">
+                <div key={idx} className="p-3 border border-divider flex justify-between items-center text-xs">
+                  <span className="text-muted">{item.type}</span>
+                  <span className="font-heading font-bold text-ink">
                     {item.pct}% (₹{item.value.toLocaleString("en-IN")})
                   </span>
                 </div>
               ))}
             </div>
-          </div>
 
-          {/* Section 3: Risk & Diversification Assessment */}
-          <div className="border-b border-hairline-dark pb-6 space-y-3">
-            <h2 className="text-lg font-bold text-white">3. Deterministic Risk Evaluation</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 bg-ink rounded-lg border border-hairline-dark space-y-1">
-                <span className="text-xs text-muted-strong">Financial Risk Indicator</span>
-                <div className="text-2xl font-bold font-mono text-white">
-                  {report.riskOverview.riskScore}/100 ({report.riskOverview.band})
+            {/* Section 2: Risk & diversification */}
+            <h2 className="text-xl font-heading font-bold text-ink mb-3">3. Risk &amp; diversification</h2>
+            <p className="text-sm leading-relaxed mb-3">
+              Your portfolio risk score is <strong>{report.riskOverview.riskScore}/100</strong> ({report.riskOverview.band}).
+              Diversification score: <strong>{report.riskOverview.diversificationScore}/100</strong>.
+            </p>
+            <div className="border-l-[3px] border-accent bg-accent-100 px-4 py-2 my-4">
+              <div className="kicker-accent mb-1">AI insight</div>
+              {report.aiInsights.length > 0 ? (
+                <div className="space-y-1.5">
+                  {report.aiInsights.map((insight, i) => (
+                    <p key={i} className="text-[13px] leading-relaxed flex items-start gap-2 m-0">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
+                      <span>{insight}</span>
+                    </p>
+                  ))}
                 </div>
-              </div>
-              <div className="p-4 bg-ink rounded-lg border border-hairline-dark space-y-1">
-                <span className="text-xs text-muted-strong">Diversification Index (HHI)</span>
-                <div className="text-2xl font-bold font-mono text-trading-up">
-                  {report.riskOverview.diversificationScore}/100
-                </div>
-              </div>
+              ) : (
+                <p className="text-[13px] leading-relaxed m-0">No AI insights available for this report.</p>
+              )}
             </div>
-          </div>
 
-          {/* Section 4: Holdings Snapshot */}
-          <div className="border-b border-hairline-dark pb-6 space-y-3">
-            <h2 className="text-lg font-bold text-white">4. Holdings Inventory</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-ink text-muted-strong uppercase text-[10px]">
+            {/* Section 3: Holdings inventory */}
+            <h2 className="text-xl font-heading font-bold text-ink mt-6 mb-3">4. Holdings inventory</h2>
+            <div className="overflow-x-auto mb-6">
+              <table className="table">
+                <thead>
                   <tr>
-                    <th className="p-2">Name</th>
-                    <th className="p-2">Type</th>
-                    <th className="p-2 text-right">Value (₹)</th>
+                    <th>Asset</th>
+                    <th>Type</th>
+                    <th style={{ textAlign: "right" }}>Value</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-hairline-dark">
+                <tbody>
                   {report.holdingsSnapshot.map((h, i) => (
                     <tr key={i}>
-                      <td className="p-2 font-semibold text-white">{h.name}</td>
-                      <td className="p-2 text-muted-strong capitalize">{h.type}</td>
-                      <td className="p-2 font-mono text-right text-white">₹{h.value.toLocaleString("en-IN")}</td>
+                      <td className="font-semibold text-ink">{h.name}</td>
+                      <td className="text-muted capitalize">
+                        {h.type === "mutual_fund" ? "HFUND" : h.type.replace("_", " ")}
+                      </td>
+                      <td className="text-right font-heading">₹{h.value.toLocaleString("en-IN")}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
 
-          {/* Section 5: AI Insights & Regulatory Disclaimers */}
-          <div className="space-y-3">
-            <h2 className="text-lg font-bold text-white">5. Educational Insights & Citations</h2>
-            <div className="p-4 bg-ink rounded-lg border border-hairline-dark space-y-2 text-xs text-body">
-              {report.aiInsights.map((insight, i) => (
-                <p key={i} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-                  <span>{insight}</span>
-                </p>
-              ))}
-            </div>
-            <div className="pt-2 text-[11px] text-muted italic">
-              *Disclaimer: This report is generated for financial literacy and decision-support only. Financial Doctor is not a SEBI-registered investment adviser.*
+            {/* Disclaimer */}
+            <div className="border-t-2 border-divider pt-4 text-[11px] text-muted leading-relaxed">
+              <strong className="block mb-1 text-[10px] tracking-wider uppercase text-muted">Disclaimer</strong>
+              This report is auto-generated by finX for informational purposes only. It does not constitute
+              investment advice. AI-generated insights are based on publicly available data and user-provided
+              portfolio information. Always consult a SEBI-registered advisor before making investment decisions.
             </div>
           </div>
         </div>

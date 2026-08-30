@@ -1,6 +1,6 @@
 # Financial Doctor (finX) — Review 1 Presentation Script
 
-A spoken walkthrough for presenting the project to judges. Keep each section to ~30–60 seconds unless noted. Pulled from the actual codebase — no invented claims.
+* [ ] 
 
 ---
 
@@ -13,6 +13,7 @@ A spoken walkthrough for presenting the project to judges. Keep each section to 
 ## 2. The Problem (45s)
 
 > "Retail investors — especially in India — face three real problems:
+>
 > 1. They have **no objective visibility** into their own portfolio risk: concentration, debt burden, liquidity.
 > 2. **Investment scams are rampant** — guaranteed-return schemes, WhatsApp/Telegram tip groups — and there's no fast way for an ordinary person to check a claim against SEBI or RBI rules.
 > 3. **Generic AI chatbots are dangerous here** — an LLM that hallucinates a number or a regulation, or casually says 'buy this stock,' creates real legal and financial risk in a regulated market."
@@ -125,6 +126,7 @@ Claim submitted
 ## 9. Compliance & Safety Posture (45s — important for judges)
 
 > "We explicitly do not position finX as a SEBI-registered investment adviser. The guardrails are in code, not just UI copy:
+>
 > - A hard-coded AI safety clause is injected into every system prompt
 > - Zero-source scam claims are code-forced to 'Unverifiable'
 > - Citation post-validation strips any hallucinated URL

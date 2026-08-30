@@ -10,35 +10,38 @@ interface VerdictBadgeProps {
 
 export function VerdictBadge({ verdict }: VerdictBadgeProps) {
   let label = "Unverifiable Claim";
-  let bg = "bg-surface-elevated border-muted/40 text-muted-strong";
+  let style: React.CSSProperties = { background: "var(--color-neutral-200)", color: "var(--color-text)" };
   let Icon = HelpCircle;
 
   switch (verdict) {
     case "likely_credible":
       label = "Likely Credible / Consistent with Guidelines";
-      bg = "bg-trading-up/15 border-trading-up/40 text-trading-up";
+      style = { background: "#e6f4ec", color: "#0a7c4a" };
       Icon = ShieldCheck;
       break;
     case "likely_misleading":
       label = "Likely Misleading / High Risk";
-      bg = "bg-primary/15 border-primary/40 text-primary";
+      style = { background: "var(--color-accent-100)", color: "var(--color-accent-800)" };
       Icon = ShieldAlert;
       break;
     case "likely_scam":
       label = "Potential Scam / Violation of Regulations";
-      bg = "bg-trading-down/15 border-trading-down/40 text-trading-down";
+      style = { background: "var(--color-accent)", color: "var(--color-bg)" };
       Icon = AlertOctagon;
       break;
     case "unverifiable":
     default:
       label = "Unverifiable (No Official Regulatory Match)";
-      bg = "bg-surface-elevated border-muted/40 text-muted-strong";
+      style = { background: "var(--color-neutral-200)", color: "var(--color-text)" };
       Icon = HelpCircle;
       break;
   }
 
   return (
-    <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider ${bg}`}>
+    <div
+      className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-heading font-800 uppercase tracking-wider"
+      style={style}
+    >
       <Icon className="w-4 h-4 shrink-0" />
       <span>{label}</span>
     </div>

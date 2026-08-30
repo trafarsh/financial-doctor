@@ -3,243 +3,151 @@
 import React from "react";
 import Link from "next/link";
 import {
-  Activity,
-  Cpu,
-  ShieldCheck,
   Sliders,
   TrendingUp,
   ArrowRight,
-  CheckCircle2,
-  XCircle,
   FileSpreadsheet,
   Lock,
 } from "lucide-react";
 import { ScoreGauge } from "@/components/ui/ScoreGauge";
 import { VerdictBadge } from "@/components/ui/VerdictBadge";
 
+const MODULES = [
+  {
+    title: "Import",
+    desc: "CSV, XLSX, or manual entry. Validated and mapped instantly.",
+    icon: FileSpreadsheet,
+    href: "/import",
+  },
+  {
+    title: "Markets",
+    desc: "Live indices, equities, fundamentals. Economic calendar built in.",
+    icon: TrendingUp,
+    href: "/markets/overview",
+  },
+  {
+    title: "Simulator",
+    desc: "Project SIP growth, stress-test with market shocks, compare scenarios.",
+    icon: Sliders,
+    href: "/simulator",
+  },
+  {
+    title: "Audit",
+    desc: "Every AI call logged — prompt, response, model, cited sources.",
+    icon: Lock,
+    href: "/audit",
+  },
+];
+
 export default function LandingPage() {
   return (
-    <div className="space-y-24 py-8">
-      {/* 1. Hero Section */}
-      <section className="relative text-center max-w-4xl mx-auto space-y-6 pt-10">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-card border border-hairline-dark text-xs font-semibold text-primary">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-          <span>AI Decision-Support Copilot for Retail Investors</span>
-        </div>
-
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
-          Invest with more insight.
+    <div>
+      {/* Hero */}
+      <section className="max-w-7xl mx-auto px-4 pt-20 pb-16 border-b-2 border-divider">
+        <div className="kicker-accent mb-3">AI-powered portfolio intelligence</div>
+        <h1 className="text-4xl sm:text-6xl leading-[1.05] tracking-tight max-w-3xl mb-4">
+          Know your money.
           <br />
-          <span className="text-primary">Understand your true risk.</span>
+          Not just the numbers.
         </h1>
-
-        <p className="text-base sm:text-lg text-muted-strong max-w-2xl mx-auto leading-relaxed">
-          An AI-powered financial intelligence copilot that analyzes your portfolio, market signals, financial news, and potential investment scams with explainable, source-backed insights.
+        <p className="text-base sm:text-lg leading-relaxed max-w-xl text-ink/75 mb-8">
+          finX reads your portfolio, scans filings, detects anomalies and runs what-if scenarios —
+          so you understand risk before it finds you.
         </p>
-
-        {/* Primary Action Group */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-          <Link
-            href="/onboarding"
-            className="w-full sm:w-auto bg-primary hover:bg-primary-active active:scale-95 text-primary-foreground font-bold text-sm px-8 py-3.5 rounded-lg flex items-center justify-center gap-2 shadow-lg transition-all"
-          >
-            <span>Analyze My Portfolio</span>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Link href="/onboarding" className="btn btn-primary text-base px-6 py-3">
+            <span>Analyze my portfolio</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <Link
-            href="/dashboard"
-            className="w-full sm:w-auto bg-surface-card hover:bg-surface-elevated border border-hairline-dark hover:border-primary text-white font-semibold text-sm px-8 py-3.5 rounded-lg flex items-center justify-center gap-2 transition-all"
-          >
-            <span>Explore Live Demo</span>
+          <Link href="/dashboard" className="btn btn-secondary text-base px-6 py-3">
+            Explore demo
           </Link>
         </div>
-
-        <p className="text-xs text-muted tracking-wide">
-          100% Free · No bank logins required · Deterministic mathematics · SEBI & RBI grounded
-        </p>
       </section>
 
-      {/* 2. Interactive Feature Matrix Preview */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card 1: Risk Engine */}
-        <div className="double-bezel p-6 space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center mb-3">
-              <Activity className="w-5 h-5 text-primary" />
-            </div>
-            <h3 className="text-lg font-bold text-white">Deterministic Risk Modeling</h3>
-            <p className="text-xs text-muted-strong mt-1 leading-relaxed">
-              Herfindahl-Hirschman concentration scoring, debt-to-asset stress tests, and liquidity analytics in pure TypeScript.
-            </p>
-          </div>
-          <div className="pt-2">
-            <ScoreGauge score={54} title="Sample Portfolio Risk" subtitle="40% concentration + 40% debt + 20% liquidity" />
-          </div>
+      {/* Feature preview cards */}
+      <section className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 border-b-2 border-divider">
+        <div className="p-8 border-b md:border-b-0 md:border-r border-divider">
+          <div className="kicker-accent mb-3">Risk gauge</div>
+          <ScoreGauge score={64} title="Portfolio risk" subtitle="Concentration risk elevated. Single-stock exposure in NVDA exceeds your 20% threshold by 4 points." type="risk" />
         </div>
 
-        {/* Card 2: Scam Detector */}
-        <div className="double-bezel p-6 space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="w-10 h-10 rounded-lg bg-trading-down/10 border border-trading-down/20 flex items-center justify-center mb-3">
-              <ShieldCheck className="w-5 h-5 text-trading-down" />
-            </div>
-            <h3 className="text-lg font-bold text-white">Scam & Misinformation Check</h3>
-            <p className="text-xs text-muted-strong mt-1 leading-relaxed">
-              Ground suspicious financial tips against official SEBI and RBI regulatory orders with zero hallucinated sources.
+        <div className="p-8 border-b md:border-b-0 md:border-r border-divider">
+          <div className="kicker-accent mb-3">Scam detector</div>
+          <div className="p-3.5 bg-bg border border-divider mb-3">
+            <p className="text-xs italic text-ink/75 m-0">
+              "Guaranteed 40% monthly returns on crypto" — 3 of 4 fraud signals triggered.
+              Cross-referenced SEBI advisory database.
             </p>
           </div>
-          <div className="space-y-3 pt-2">
-            <div className="p-3 bg-ink rounded-lg border border-hairline-dark text-xs">
-              <p className="text-muted-strong italic">"Guaranteed 30% monthly return from algorithmic forex bot..."</p>
-            </div>
-            <VerdictBadge verdict="likely_scam" />
-          </div>
+          <VerdictBadge verdict="likely_scam" />
         </div>
 
-        {/* Card 3: Grounded AI Copilot */}
-        <div className="double-bezel p-6 space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="w-10 h-10 rounded-lg bg-trading-up/10 border border-trading-up/20 flex items-center justify-center mb-3">
-              <Cpu className="w-5 h-5 text-trading-up" />
-            </div>
-            <h3 className="text-lg font-bold text-white">AI Research Copilot</h3>
-            <p className="text-xs text-muted-strong mt-1 leading-relaxed">
-              Context-aware research assistant fusing your asset allocations, live Indian market indices, and regulatory knowledge.
+        <div className="p-8">
+          <div className="kicker-accent mb-3">AI copilot</div>
+          <div className="bg-surface p-3.5 mb-2.5 border-l-2 border-accent">
+            <p className="text-sm m-0 leading-relaxed">
+              "Your real estate allocation is 42% of net worth — significantly above the 25%
+              threshold for balanced risk."
             </p>
           </div>
-          <div className="p-3 bg-ink rounded-lg border border-hairline-dark space-y-2 pt-2">
-            <span className="text-[10px] font-mono text-primary uppercase font-bold">Verified Citation Attached</span>
-            <p className="text-xs text-body line-clamp-2">
-              "SEBI regulations explicitly prohibit investment advisers from promising fixed returns on market-linked products."
-            </p>
+          <div className="flex gap-1.5">
+            <span className="tag tag-accent">Cited: SEBI circular</span>
+            <span className="tag tag-neutral">Factor: concentration</span>
           </div>
         </div>
       </section>
 
-      {/* 3. What This Is vs. What This Isn't */}
-      <section className="double-bezel p-8 space-y-6">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <h2 className="text-2xl font-bold text-white">Clear Boundaries & Regulatory Compliance</h2>
-          <p className="text-xs text-muted-strong">
-            Built with strict safety guardrails to empower financial literacy rather than replacing licensed advisory.
+      {/* Module grid */}
+      <section className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-b-2 border-divider">
+        {MODULES.map((item, idx) => {
+          const Icon = item.icon;
+          const isLast = idx === MODULES.length - 1;
+          return (
+            <Link
+              key={item.title}
+              href={item.href}
+              className={`p-7 group ${!isLast ? "border-b lg:border-b-0 lg:border-r border-divider" : ""}`}
+            >
+              <Icon className="w-5 h-5 text-accent mb-3" />
+              <h4 className="text-lg mb-1.5 group-hover:text-accent transition-colors">{item.title}</h4>
+              <p className="text-sm text-ink/65 leading-relaxed m-0">{item.desc}</p>
+            </Link>
+          );
+        })}
+      </section>
+
+      {/* Compliance disclaimer strip */}
+      <section className="max-w-7xl mx-auto px-4 py-5 grid grid-cols-1 md:grid-cols-3 gap-8 border-b-2 border-divider text-[11px] leading-relaxed text-ink/55">
+        <div>
+          <strong className="block mb-1 text-ink text-[10px] tracking-widest uppercase">Not investment advice</strong>
+          finX provides informational analysis only. Always consult a registered advisor before making investment
+          decisions.
+        </div>
+        <div>
+          <strong className="block mb-1 text-ink text-[10px] tracking-widest uppercase">Data sources</strong>
+          Market data from NSE/BSE via approved feeds. Filings from SEBI EDGAR. All data delayed per exchange rules.
+        </div>
+        <div>
+          <strong className="block mb-1 text-ink text-[10px] tracking-widest uppercase">Privacy</strong>
+          Portfolio data is encrypted at rest and in transit. finX never shares or sells your financial data.
+        </div>
+      </section>
+
+      {/* Closing CTA */}
+      <section className="bg-accent text-bg px-4 py-16">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl tracking-tight mb-3 text-bg">Stop guessing. Start knowing.</h2>
+          <p className="text-base mb-6 max-w-lg opacity-85">
+            Join 12,000+ retail investors using AI to understand their money.
           </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-          {/* What This Is */}
-          <div className="p-5 rounded-xl bg-ink border border-trading-up/30 space-y-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-trading-up uppercase tracking-wider">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>What Financial Doctor Is</span>
-            </div>
-            <ul className="space-y-2 text-xs text-muted-strong">
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-trading-up shrink-0 mt-0.5" />
-                <span>An educational decision-support copilot for understanding personal risk exposure.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-trading-up shrink-0 mt-0.5" />
-                <span>Deterministic mathematical portfolio health and HHI diversification scoring.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-trading-up shrink-0 mt-0.5" />
-                <span>Source-grounded scam verification citing official SEBI, RBI, and AMFI guidelines.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-trading-up shrink-0 mt-0.5" />
-                <span>What-if scenario stress testing and compound growth projections.</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* What This Isn't */}
-          <div className="p-5 rounded-xl bg-ink border border-trading-down/30 space-y-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-trading-down uppercase tracking-wider">
-              <XCircle className="w-4 h-4" />
-              <span>What Financial Doctor Is Not</span>
-            </div>
-            <ul className="space-y-2 text-xs text-muted-strong">
-              <li className="flex items-start gap-2">
-                <XCircle className="w-3.5 h-3.5 text-trading-down shrink-0 mt-0.5" />
-                <span>NOT a registered investment adviser or asset management company.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <XCircle className="w-3.5 h-3.5 text-trading-down shrink-0 mt-0.5" />
-                <span>NEVER issues personalized buy, sell, hold, or allocation directives.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <XCircle className="w-3.5 h-3.5 text-trading-down shrink-0 mt-0.5" />
-                <span>NOT an automated broker or trade execution platform.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <XCircle className="w-3.5 h-3.5 text-trading-down shrink-0 mt-0.5" />
-                <span>Never collects or stores bank credentials, PINs, or private API keys.</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Complete Module Grid */}
-      <section className="space-y-6">
-        <h2 className="text-2xl font-bold text-white text-center">Comprehensive Platform Capabilities</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              title: "CSV & Excel Ingestion",
-              desc: "Import .csv or .xlsx with row-by-row Zod validation & client-side export.",
-              icon: FileSpreadsheet,
-              href: "/import",
-            },
-            {
-              title: "Live Market Intelligence",
-              desc: "Track Nifty 50, Sensex, Gold, Bond yields, and company fundamentals.",
-              icon: TrendingUp,
-              href: "/markets/overview",
-            },
-            {
-              title: "Stress-Test Simulator",
-              desc: "Simulate market crashes (-20%), inflation drag, and monthly compounding.",
-              icon: Sliders,
-              href: "/simulator",
-            },
-            {
-              title: "Transparent AI Audit Log",
-              desc: "Every AI interaction is hashed, cited, and logged for regulatory auditing.",
-              icon: Lock,
-              href: "/audit",
-            },
-          ].map((item, idx) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={idx}
-                href={item.href}
-                className="double-bezel p-5 hover:border-primary/50 transition-all group block space-y-2"
-              >
-                <Icon className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                <h4 className="text-sm font-bold text-white group-hover:text-primary transition-colors">
-                  {item.title}
-                </h4>
-                <p className="text-xs text-muted-strong leading-relaxed">{item.desc}</p>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 5. Call to Action Banner */}
-      <section className="double-bezel p-10 text-center space-y-6 bg-gradient-to-b from-surface-card to-canvas-dark">
-        <h2 className="text-3xl font-extrabold text-white">Ready to inspect your financial health?</h2>
-        <p className="text-sm text-muted-strong max-w-xl mx-auto">
-          Start from zero with our guided wizard or import existing holdings in under 60 seconds.
-        </p>
-        <div className="flex justify-center gap-4">
           <Link
-            href="/onboarding"
-            className="bg-primary hover:bg-primary-active text-primary-foreground font-bold text-sm px-8 py-3 rounded-lg shadow-md transition-all"
+            href="/signup"
+            className="btn btn-secondary text-base px-6 py-3"
+            style={{ background: "var(--color-bg)", color: "var(--color-accent)", borderColor: "var(--color-bg)" }}
           >
-            Get Started Now
+            <span>Create free account</span>
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </section>

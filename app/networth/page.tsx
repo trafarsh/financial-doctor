@@ -28,8 +28,8 @@ const STEPS = [
   },
   {
     id: "equity",
-    title: "Stocks, ETFs & Mutual Funds",
-    question: "What is the approximate market value of your shares, SIPs, and mutual fund portfolios?",
+    title: "Stocks, ETFs & HFUNDs",
+    question: "What is the approximate market value of your shares, SIPs, and HFUND portfolios?",
     icon: TrendingUp,
     category: "asset",
     type: "stock",
@@ -118,7 +118,7 @@ export default function GuidedNetWorthWizard() {
       assets.push({ type: "bank", name: "Savings & Deposits", value: answers.bank });
     }
     if (answers.equity > 0) {
-      assets.push({ type: "stock", name: "Equity & Mutual Funds", value: answers.equity, sector: "Diversified" });
+      assets.push({ type: "stock", name: "Equity & HFUNDs", value: answers.equity, sector: "Diversified" });
     }
     if (answers.gold > 0) {
       assets.push({ type: "gold", name: "Gold Holdings", value: answers.gold });
@@ -154,54 +154,55 @@ export default function GuidedNetWorthWizard() {
     <div className="max-w-2xl mx-auto py-10 space-y-8">
       {/* Progress Header */}
       <div className="space-y-2 text-center">
-        <div className="flex items-center justify-between text-xs text-muted-strong font-semibold">
+        <div className="flex items-center justify-between text-xs font-heading font-semibold text-ink/65">
           <span>Step {currentStepIdx + 1} of {STEPS.length}</span>
-          <span className="text-primary">{Math.round(progressPct)}% Completed</span>
+          <span className="text-accent">{Math.round(progressPct)}% Completed</span>
         </div>
-        <div className="w-full h-1.5 bg-surface-card rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-neutral-300 relative">
           <div
-            className="h-full bg-primary transition-all duration-500 rounded-full"
+            className="h-full bg-accent transition-all duration-500"
             style={{ width: `${progressPct}%` }}
           />
         </div>
       </div>
 
       {/* Step Card */}
-      <div className="double-bezel p-8 space-y-6">
-        <div className="flex items-center gap-3 border-b border-hairline-dark pb-4">
-          <div className="w-12 h-12 rounded-xl bg-surface-card border border-hairline-dark flex items-center justify-center">
-            <Icon className="w-6 h-6 text-primary" />
+      <div className="bg-surface border-2 border-ink p-8 space-y-6">
+        <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
+          <div className="w-12 h-12 bg-bg border border-divider flex items-center justify-center">
+            <Icon className="w-6 h-6 text-accent" />
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold text-muted tracking-wider">
+            <span className="kicker-accent block mb-1">
               {step.category === "asset" ? "Asset Category" : "Debt Category"}
             </span>
-            <h2 className="text-lg font-bold text-white">{step.title}</h2>
+            <h2 className="text-lg">{step.title}</h2>
           </div>
         </div>
 
-        <p className="text-sm text-body leading-relaxed font-medium">
+        <p className="text-sm text-ink leading-relaxed font-medium">
           {step.question}
         </p>
 
         {/* Input Field */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-muted-strong">Estimated Amount in Rupees (₹)</label>
+        <div className="field">
+          <label>Estimated Amount in Rupees (₹)</label>
           <div className="relative">
-            <span className="absolute left-4 top-3 text-primary font-bold text-lg font-mono">₹</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-accent font-heading font-800 text-lg">₹</span>
             <input
               type="number"
               value={answers[step.id] || ""}
               onChange={(e) => setAnswers({ ...answers, [step.id]: Number(e.target.value) })}
               placeholder="0"
-              className="w-full bg-ink border border-hairline-dark focus:border-primary rounded-xl pl-10 pr-4 py-3 text-lg font-bold font-mono text-white outline-none transition-colors"
+              className="input pl-10 text-lg font-heading font-800"
+              style={{ paddingLeft: "2.5rem" }}
             />
           </div>
         </div>
 
         {/* Quick-Estimate Suggestion Chips */}
         <div className="space-y-2 pt-2">
-          <span className="text-[11px] font-semibold text-muted uppercase tracking-wider block">
+          <span className="kicker block">
             Quick Estimate Chips:
           </span>
           <div className="flex flex-wrap gap-2">
@@ -210,11 +211,11 @@ export default function GuidedNetWorthWizard() {
                 key={chipVal}
                 type="button"
                 onClick={() => handleChipClick(chipVal)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold border transition-all ${
+                className={
                   answers[step.id] === chipVal
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-ink hover:bg-surface-elevated border-hairline-dark text-muted-strong hover:text-white"
-                }`}
+                    ? "px-3 py-1.5 text-xs font-heading font-semibold border border-accent bg-accent text-bg"
+                    : "px-3 py-1.5 text-xs font-heading font-semibold border border-divider bg-bg text-ink/65 hover:text-ink"
+                }
               >
                 ₹{chipVal.toLocaleString("en-IN")}
               </button>
@@ -222,7 +223,7 @@ export default function GuidedNetWorthWizard() {
             <button
               type="button"
               onClick={() => handleChipClick(0)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-ink hover:bg-surface-elevated border border-hairline-dark text-muted"
+              className="px-3 py-1.5 text-xs font-heading font-semibold bg-bg border border-divider text-ink/55"
             >
               Skip / Zero
             </button>
@@ -230,12 +231,12 @@ export default function GuidedNetWorthWizard() {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex items-center justify-between pt-6 border-t border-hairline-dark">
+        <div className="flex items-center justify-between pt-6 border-t-2 border-divider">
           <button
             type="button"
             onClick={handleBack}
             disabled={currentStepIdx === 0}
-            className="text-xs font-semibold text-muted-strong hover:text-white flex items-center gap-1.5 disabled:opacity-30"
+            className="text-xs font-heading font-semibold text-ink/65 hover:text-ink flex items-center gap-1.5 disabled:opacity-30"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Previous Step</span>
@@ -245,7 +246,7 @@ export default function GuidedNetWorthWizard() {
             type="button"
             onClick={handleNext}
             disabled={submitting}
-            className="bg-primary hover:bg-primary-active active:scale-95 text-primary-foreground font-bold text-xs px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-md"
+            className="btn btn-primary"
           >
             <span>{isLastStep ? (submitting ? "Computing Analytics..." : "Finish & View Dashboard") : "Next Step"}</span>
             <ArrowRight className="w-4 h-4" />

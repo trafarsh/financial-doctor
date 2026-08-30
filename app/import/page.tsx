@@ -266,43 +266,39 @@ export default function ImportPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 max-w-5xl mx-auto px-4 py-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-hairline-dark pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-divider pb-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Import Portfolio Data</h1>
-          <p className="text-xs text-muted-strong mt-0.5">
+          <h1 className="text-2xl">Import portfolio data</h1>
+          <p className="text-xs text-ink/65 mt-0.5">
             Add your assets and liabilities manually or upload a CSV / Excel spreadsheet.
           </p>
         </div>
 
         {/* Tab Toggle */}
-        <div className="flex bg-surface-card p-1 rounded-lg border border-hairline-dark">
+        <div className="seg">
           <button
             onClick={() => setActiveTab("manual")}
-            className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              activeTab === "manual" ? "bg-primary text-primary-foreground" : "text-muted-strong hover:text-white"
-            }`}
+            className={`seg-opt ${activeTab === "manual" ? "active" : ""}`}
           >
-            Manual Entry
+            Manual entry
           </button>
           <button
             onClick={() => setActiveTab("file")}
-            className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              activeTab === "file" ? "bg-primary text-primary-foreground" : "text-muted-strong hover:text-white"
-            }`}
+            className={`seg-opt ${activeTab === "file" ? "active" : ""}`}
           >
-            File Upload (CSV / Excel)
+            File upload (CSV / Excel)
           </button>
         </div>
       </div>
 
       {statusMessage && (
         <div
-          className={`p-3 rounded-lg text-xs font-semibold ${
+          className={`p-3 text-xs font-semibold border ${
             statusMessage.includes("Error")
-              ? "bg-trading-down/15 border border-trading-down/40 text-trading-down"
-              : "bg-trading-up/15 border border-trading-up/40 text-trading-up"
+              ? "bg-accent-100 border-accent text-accent-800"
+              : "bg-neutral-100 border-up text-up"
           }`}
         >
           {statusMessage}
@@ -313,64 +309,59 @@ export default function ImportPage() {
       {activeTab === "manual" && (
         <div className="space-y-6">
           {/* Live Net Worth Preview Card */}
-          <div className="double-bezel p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-surface border-2 border-divider p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-muted-strong uppercase tracking-wider">
-                  Calculated Net Worth Preview
-                </span>
+                <span className="kicker">Calculated net worth preview</span>
                 <button
                   onClick={loadHoldings}
                   title="Reload saved holdings"
-                  className="text-muted hover:text-primary transition-colors"
+                  className="text-ink/45 hover:text-accent transition-colors"
                 >
-                  <RefreshCw className={`w-3 h-3 ${loadingHoldings ? "animate-spin text-primary" : ""}`} />
+                  <RefreshCw className={`w-3 h-3 ${loadingHoldings ? "animate-spin text-accent" : ""}`} />
                 </button>
               </div>
-              <span className="text-2xl font-extrabold font-mono text-primary">
+              <span className="text-2xl font-mono font-bold text-accent">
                 ₹{netWorthPreview.toLocaleString("en-IN")}
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs">
-              <span className="text-trading-up font-semibold flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5" /> Total Assets: ₹{totalAssets.toLocaleString("en-IN")}
+              <span className="text-up font-semibold flex items-center gap-1">
+                <TrendingUp className="w-3.5 h-3.5" /> Total assets: ₹{totalAssets.toLocaleString("en-IN")}
               </span>
-              <span className="text-muted">|</span>
-              <span className="text-trading-down font-semibold flex items-center gap-1">
-                <TrendingDown className="w-3.5 h-3.5" /> Total Debt: ₹{totalLiabilities.toLocaleString("en-IN")}
+              <span className="text-ink/45">|</span>
+              <span className="text-accent font-semibold flex items-center gap-1">
+                <TrendingDown className="w-3.5 h-3.5" /> Total debt: ₹{totalLiabilities.toLocaleString("en-IN")}
               </span>
             </div>
           </div>
 
           {/* Assets Section */}
-          <div className="double-bezel p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-hairline-dark pb-3">
+          <div className="bg-surface border-2 border-divider p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-divider pb-3">
               <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-trading-up" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Tracked Assets</h3>
+                <Layers className="w-4 h-4 text-up" />
+                <h3 className="text-sm uppercase tracking-wider">Tracked assets</h3>
               </div>
-              <button
-                onClick={addAssetRow}
-                className="text-xs bg-ink hover:bg-surface-elevated text-trading-up font-semibold px-3 py-1.5 rounded border border-hairline-dark flex items-center gap-1"
-              >
+              <button onClick={addAssetRow} className="btn btn-secondary text-xs py-1.5">
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add Asset</span>
+                <span>Add asset</span>
               </button>
             </div>
 
             <div className="space-y-3">
               {assets.map((asset, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center p-2.5 bg-ink rounded-lg border border-hairline-dark">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center p-2.5 bg-bg border border-divider">
                   <div className="sm:col-span-3">
                     <select
                       value={asset.type}
                       onChange={(e) => updateAsset(idx, "type", e.target.value as AssetType)}
-                      className="w-full bg-surface-card border border-hairline-dark rounded px-2.5 py-1.5 text-xs text-white"
+                      className="input text-xs"
                     >
                       <option value="bank">Bank / Cash</option>
                       <option value="stock">Stock / Equity</option>
                       <option value="etf">ETF</option>
-                      <option value="mutual_fund">Mutual Fund</option>
+                      <option value="mutual_fund">HFUND</option>
                       <option value="gold">Gold / Commodity</option>
                       <option value="real_estate">Real Estate</option>
                       <option value="other">Other Asset</option>
@@ -382,7 +373,7 @@ export default function ImportPage() {
                       placeholder="Asset Name (e.g. Reliance, HDFC FD)"
                       value={asset.name}
                       onChange={(e) => updateAsset(idx, "name", e.target.value)}
-                      className="w-full bg-surface-card border border-hairline-dark rounded px-2.5 py-1.5 text-xs text-white"
+                      className="input text-xs"
                     />
                   </div>
                   <div className="sm:col-span-3">
@@ -391,13 +382,13 @@ export default function ImportPage() {
                       placeholder="Value (₹)"
                       value={asset.value || ""}
                       onChange={(e) => updateAsset(idx, "value", Number(e.target.value))}
-                      className="w-full bg-surface-card border border-hairline-dark rounded px-2.5 py-1.5 text-xs text-white font-mono"
+                      className="input text-xs font-mono"
                     />
                   </div>
                   <div className="sm:col-span-2 flex items-center justify-end">
                     <button
                       onClick={() => removeAssetRow(idx)}
-                      className="p-1.5 text-muted hover:text-trading-down"
+                      className="p-1.5 text-ink/45 hover:text-accent"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -406,7 +397,7 @@ export default function ImportPage() {
               ))}
 
               {!loadingHoldings && assets.length === 0 && (
-                <p className="text-xs text-muted text-center py-6">
+                <p className="text-xs text-ink/55 text-center py-6">
                   No assets saved yet. Click "Add Asset" to enter one, or switch to File Upload to import a spreadsheet.
                 </p>
               )}
@@ -414,29 +405,26 @@ export default function ImportPage() {
           </div>
 
           {/* Liabilities Section */}
-          <div className="double-bezel p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-hairline-dark pb-3">
+          <div className="bg-surface border-2 border-divider p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-divider pb-3">
               <div className="flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-trading-down" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Liabilities & Debts</h3>
+                <TrendingDown className="w-4 h-4 text-accent" />
+                <h3 className="text-sm uppercase tracking-wider">Liabilities &amp; debts</h3>
               </div>
-              <button
-                onClick={addLiabilityRow}
-                className="text-xs bg-ink hover:bg-surface-elevated text-trading-down font-semibold px-3 py-1.5 rounded border border-hairline-dark flex items-center gap-1"
-              >
+              <button onClick={addLiabilityRow} className="btn btn-secondary text-xs py-1.5">
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add Debt</span>
+                <span>Add debt</span>
               </button>
             </div>
 
             <div className="space-y-3">
               {liabilities.map((liability, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center p-2.5 bg-ink rounded-lg border border-hairline-dark">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center p-2.5 bg-bg border border-divider">
                   <div className="sm:col-span-3">
                     <select
                       value={liability.type}
                       onChange={(e) => updateLiability(idx, "type", e.target.value as LiabilityType)}
-                      className="w-full bg-surface-card border border-hairline-dark rounded px-2.5 py-1.5 text-xs text-white"
+                      className="input text-xs"
                     >
                       <option value="loan">Personal / Auto Loan</option>
                       <option value="credit_card">Credit Card Dues</option>
@@ -450,7 +438,7 @@ export default function ImportPage() {
                       placeholder="Debt Name (e.g. Car Loan)"
                       value={liability.name}
                       onChange={(e) => updateLiability(idx, "name", e.target.value)}
-                      className="w-full bg-surface-card border border-hairline-dark rounded px-2.5 py-1.5 text-xs text-white"
+                      className="input text-xs"
                     />
                   </div>
                   <div className="sm:col-span-3">
@@ -459,13 +447,13 @@ export default function ImportPage() {
                       placeholder="Outstanding (₹)"
                       value={liability.amount || ""}
                       onChange={(e) => updateLiability(idx, "amount", Number(e.target.value))}
-                      className="w-full bg-surface-card border border-hairline-dark rounded px-2.5 py-1.5 text-xs text-white font-mono"
+                      className="input text-xs font-mono"
                     />
                   </div>
                   <div className="sm:col-span-2 flex items-center justify-end">
                     <button
                       onClick={() => removeLiabilityRow(idx)}
-                      className="p-1.5 text-muted hover:text-trading-down"
+                      className="p-1.5 text-ink/45 hover:text-accent"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -474,7 +462,7 @@ export default function ImportPage() {
               ))}
 
               {!loadingHoldings && liabilities.length === 0 && (
-                <p className="text-xs text-muted text-center py-6">
+                <p className="text-xs text-ink/55 text-center py-6">
                   No liabilities saved yet. Click "Add Debt" to enter one.
                 </p>
               )}
@@ -486,72 +474,72 @@ export default function ImportPage() {
       {/* FILE UPLOAD TAB */}
       {activeTab === "file" && (
         <div className="space-y-6">
-          <div className="double-bezel p-8 text-center border-dashed border-2 border-hairline-dark hover:border-primary transition-colors rounded-xl bg-ink/50 space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-surface-card border border-hairline-dark flex items-center justify-center mx-auto">
-              <UploadCloud className="w-6 h-6 text-primary" />
+          <div className="text-center border-2 border-dashed border-divider hover:border-accent transition-colors bg-surface p-8 space-y-4">
+            <div className="w-12 h-12 bg-bg border border-divider flex items-center justify-center mx-auto">
+              <UploadCloud className="w-6 h-6 text-accent" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-white">Upload CSV or Excel Spreadsheet</h3>
-              <p className="text-xs text-muted-strong">
-                Accepts <code className="text-primary">.csv</code>, <code className="text-primary">.xlsx</code>, and <code className="text-primary">.xls</code> files
+              <h3 className="text-sm font-semibold">Upload CSV or Excel spreadsheet</h3>
+              <p className="text-xs text-ink/65">
+                Accepts <code className="text-accent">.csv</code>, <code className="text-accent">.xlsx</code>, and <code className="text-accent">.xls</code> files
               </p>
             </div>
 
-            <label className="inline-flex items-center gap-2 bg-primary hover:bg-primary-active text-primary-foreground font-bold text-xs px-5 py-2.5 rounded-lg cursor-pointer transition-all shadow-sm">
+            <label className="btn btn-primary inline-flex cursor-pointer">
               <FileSpreadsheet className="w-4 h-4" />
-              <span>{fileName ? `Loaded: ${fileName}` : "Select File"}</span>
+              <span>{fileName ? `Loaded: ${fileName}` : "Select file"}</span>
               <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} className="hidden" />
             </label>
 
-            <div className="text-[11px] text-muted pt-2">
-              Required headers: <code className="text-body">kind,type,name,value,quantity,interest_rate,sector</code>
+            <div className="text-[11px] text-ink/55 pt-2">
+              Required headers: <code>kind,type,name,value,quantity,interest_rate,sector</code>
             </div>
           </div>
 
           {/* Validation Preview Table */}
           {parsedRows.length > 0 && (
-            <div className="double-bezel p-5 space-y-3">
+            <div className="bg-surface border-2 border-divider p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                  File Ingestion Preview ({parsedRows.length} Rows Detected)
+                <h3 className="text-xs uppercase tracking-wider font-semibold">
+                  File ingestion preview ({parsedRows.length} rows detected)
                 </h3>
                 <div className="flex items-center gap-3 text-xs">
-                  <span className="text-trading-up font-semibold">
+                  <span className="text-up font-semibold">
                     {parsedRows.filter((r) => r.valid).length} Valid
                   </span>
-                  <span className="text-trading-down font-semibold">
+                  <span className="text-accent font-semibold">
                     {parsedRows.filter((r) => !r.valid).length} Invalid
                   </span>
                 </div>
               </div>
 
               <div className="overflow-x-auto max-h-80">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-ink text-muted-strong uppercase text-[10px] tracking-wider border-b border-hairline-dark">
+                <table className="table">
+                  <thead>
                     <tr>
-                      <th className="p-2.5">Row</th>
-                      <th className="p-2.5">Kind</th>
-                      <th className="p-2.5">Type</th>
-                      <th className="p-2.5">Name</th>
-                      <th className="p-2.5 font-mono">Value (₹)</th>
-                      <th className="p-2.5">Status</th>
+                      <th>Row</th>
+                      <th>Kind</th>
+                      <th>Type</th>
+                      <th>Name</th>
+                      <th>Value (₹)</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-hairline-dark">
+                  <tbody>
                     {parsedRows.map((r, idx) => (
-                      <tr key={idx} className="hover:bg-ink">
-                        <td className="p-2.5 font-mono text-muted">{r.rowNumber}</td>
-                        <td className="p-2.5 uppercase font-semibold text-[10px]">{r.kind}</td>
-                        <td className="p-2.5 text-muted-strong">{r.type}</td>
-                        <td className="p-2.5 font-semibold text-white">{r.name}</td>
-                        <td className="p-2.5 font-mono">₹{r.value.toLocaleString("en-IN")}</td>
-                        <td className="p-2.5">
+                      <tr key={idx}>
+                        <td className="font-mono text-ink/55">{r.rowNumber}</td>
+                        <td className="uppercase text-[10px] font-semibold">{r.kind}</td>
+                        <td className="text-ink/65">{r.type}</td>
+                        <td className="font-semibold">{r.name}</td>
+                        <td className="font-mono">₹{r.value.toLocaleString("en-IN")}</td>
+                        <td>
                           {r.valid ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-trading-up bg-trading-up/15 px-2 py-0.5 rounded font-bold">
+                            <span className="tag bg-neutral-100 text-up">
                               <CheckCircle2 className="w-3 h-3" /> Valid
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-trading-down bg-trading-down/15 px-2 py-0.5 rounded font-bold" title={r.error}>
+                            <span className="tag tag-accent" title={r.error}>
                               <AlertCircle className="w-3 h-3" /> {r.error || "Invalid"}
                             </span>
                           )}
@@ -568,12 +556,8 @@ export default function ImportPage() {
 
       {/* Save & Confirm Action Button */}
       <div className="pt-4 flex justify-end">
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="bg-primary hover:bg-primary-active active:scale-95 text-primary-foreground font-bold text-sm px-8 py-3 rounded-lg flex items-center gap-2 shadow-lg transition-all disabled:opacity-50"
-        >
-          <span>{submitting ? "Processing & Calculating Snapshots..." : "Save Portfolio & Compute Analysis"}</span>
+        <button onClick={handleSubmit} disabled={submitting} className="btn btn-primary text-sm px-8 py-3">
+          <span>{submitting ? "Processing & calculating snapshots..." : "Save portfolio & compute analysis"}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

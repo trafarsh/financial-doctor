@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Settings, Shield, User, RefreshCw, LogOut, Trash2 } from "lucide-react";
+import { Shield, RefreshCw } from "lucide-react";
 import { APP_CONFIG } from "@/lib/config";
 
 export default function SettingsPage() {
@@ -31,43 +31,44 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      <div className="border-b border-hairline-dark pb-4">
-        <h1 className="text-2xl font-extrabold text-white">Application Settings</h1>
-        <p className="text-xs text-muted-strong mt-0.5">
+    <div className="flex flex-col gap-6 px-8 py-8 max-w-2xl">
+      <div className="pb-4 border-b-2 border-divider mb-8">
+        <div className="kicker">Settings</div>
+        <h1 className="text-2xl font-heading font-extrabold text-ink mt-1">Application settings</h1>
+        <p className="text-xs text-muted mt-1">
           Platform preferences, compliance disclaimers, and demo state management.
         </p>
       </div>
 
       {/* Demo Controls */}
-      <div className="double-bezel p-6 space-y-4">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-          <RefreshCw className="w-4 h-4 text-primary" />
-          <span>Demo Data Management</span>
+      <div className="border-2 border-divider p-6 mb-6">
+        <h3 className="text-sm font-heading font-bold text-ink uppercase tracking-wider flex items-center gap-2 mb-3">
+          <RefreshCw className="w-4 h-4 text-accent" />
+          <span>Demo data management</span>
         </h3>
-        <p className="text-xs text-muted-strong leading-relaxed">
-          Reset all local holdings, historical snapshots, and risk scores to the standard Indian benchmark test portfolio (Total Assets: ₹10,00,000 | Liabilities: ₹5,00,000 | Net Worth: ₹5,00,000).
+        <p className="text-xs text-muted leading-relaxed mb-4">
+          Reset all local holdings, historical snapshots, and risk scores to the standard Indian benchmark test
+          portfolio (Total Assets: ₹10,00,000 | Liabilities: ₹5,00,000 | Net Worth: ₹5,00,000).
         </p>
-        <button
-          onClick={handleResetDemo}
-          className="bg-surface-card hover:bg-surface-elevated border border-hairline-dark hover:border-primary text-xs font-semibold text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-        >
-          <span>{resetSuccess ? "Demo Data Reset Completed!" : "Reset to Benchmark Indian Portfolio"}</span>
+        <button onClick={handleResetDemo} className="btn btn-secondary">
+          <span>{resetSuccess ? "Demo data reset completed!" : "Reset to benchmark Indian portfolio"}</span>
         </button>
       </div>
 
       {/* Regulatory Disclaimers */}
-      <div className="double-bezel p-6 space-y-3">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-          <Shield className="w-4 h-4 text-trading-up" />
-          <span>Regulatory Compliance Posture</span>
+      <div className="border-2 border-divider p-6">
+        <h3 className="text-sm font-heading font-bold text-ink uppercase tracking-wider flex items-center gap-2 mb-3">
+          <Shield className="w-4 h-4 text-up" />
+          <span>Regulatory compliance posture</span>
         </h3>
-        <div className="p-4 bg-ink rounded-lg border border-hairline-dark text-xs text-muted-strong leading-relaxed space-y-2">
+        <div className="p-4 border border-divider text-xs text-muted leading-relaxed space-y-2">
           <p>
-            <strong className="text-white font-semibold">Statutory Posture:</strong> {APP_CONFIG.disclaimer.persistent}
+            <strong className="text-ink font-semibold">Statutory posture:</strong> {APP_CONFIG.disclaimer.persistent}
           </p>
           <p>
-            <strong className="text-white font-semibold">Grounding Requirement:</strong> Every market evaluation is grounded in official SEBI/RBI regulations. Claims without verifiable sources are strictly marked as Unverifiable.
+            <strong className="text-ink font-semibold">Grounding requirement:</strong> Every market evaluation is
+            grounded in official SEBI/RBI regulations. Claims without verifiable sources are strictly marked as
+            Unverifiable.
           </p>
         </div>
       </div>

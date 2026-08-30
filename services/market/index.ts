@@ -168,6 +168,38 @@ const DEMO_INDICES: MarketIndex[] = [
     changePct: -0.28,
     trend: "down",
   },
+  {
+    symbol: "NASDAQ",
+    name: "NASDAQ",
+    value: 16166.87,
+    change: 180.20,
+    changePct: 1.12,
+    trend: "up",
+  },
+  {
+    symbol: "CRUDE_OIL",
+    name: "Crude Oil",
+    value: 78.54,
+    change: 0.65,
+    changePct: 0.83,
+    trend: "up",
+  },
+  {
+    symbol: "BRENT_CRUDE",
+    name: "Brent Crude",
+    value: 82.35,
+    change: 0.55,
+    changePct: 0.67,
+    trend: "up",
+  },
+  {
+    symbol: "WTI_CRUDE",
+    name: "WTI Crude",
+    value: 78.54,
+    change: 0.70,
+    changePct: 0.90,
+    trend: "up",
+  },
 ];
 
 const DEMO_EVENTS: MarketEvent[] = [
@@ -247,13 +279,17 @@ export class DefaultMarketProvider implements IMarketProvider {
   }
 
   async getIndices(): Promise<MarketIndex[]> {
-    // Tickers: Nifty 50 (^NSEI), Sensex (^BSESN), Bank Nifty (^NSEBANK), Gold (GC=F), 10Y yield (^TNX)
+    // Tickers: Nifty 50 (^NSEI), Sensex (^BSESN), Bank Nifty (^NSEBANK), Gold (GC=F), 10Y yield (^TNX), NASDAQ (^IXIC), Crude (CL=F), Brent (BZ=F)
     const indexMappings = [
       { key: "NIFTY_50", name: "NIFTY 50", ticker: "^NSEI" },
       { key: "SENSEX", name: "BSE SENSEX", ticker: "^BSESN" },
       { key: "BANK_NIFTY", name: "BANK NIFTY", ticker: "^NSEBANK" },
       { key: "GOLD_MCX", name: "Gold (USD/oz)", ticker: "GC=F" },
       { key: "IN_10Y_BOND", name: "India 10Y Yield", ticker: "^NSEI" }, // Fallback to NSEI changes
+      { key: "NASDAQ", name: "NASDAQ", ticker: "^IXIC" },
+      { key: "CRUDE_OIL", name: "Crude Oil", ticker: "CL=F" },
+      { key: "BRENT_CRUDE", name: "Brent Crude", ticker: "BZ=F" },
+      { key: "WTI_CRUDE", name: "WTI Crude", ticker: "CL=F" },
     ];
 
     const indices: MarketIndex[] = [];

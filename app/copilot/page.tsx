@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Cpu, Send, Sparkles, BookOpen, ShieldAlert, ArrowRight, User, Bot, HelpCircle } from "lucide-react";
+import { Cpu, Send, Sparkles, Paperclip, Terminal, User } from "lucide-react";
 import { SourceList } from "@/components/ui/SourceList";
 import { AIMessage } from "@/lib/types";
 
@@ -19,7 +19,7 @@ export default function CopilotPage() {
       id: "msg_intro",
       role: "assistant",
       content:
-        "Welcome to your AI Financial Research Copilot. I analyze your portfolio allocations, risk metrics, and official regulatory guidance (SEBI/RBI) to answer financial questions in plain language.\n\n*Note: I provide educational decision support and never give personalized buy/sell directives.*",
+        "Welcome to your AI Financial Research Copilot. I analyze your portfolio allocations, risk metrics, and official regulatory guidance (SEBI/RBI) to answer financial questions in plain language.\n\nNote: I provide educational decision support and never give personalized buy/sell directives.",
       citations: [
         {
           id: "cit_intro",
@@ -77,38 +77,42 @@ export default function CopilotPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
-      {/* Header */}
-      <div className="border-b border-hairline-dark pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center">
-              <Cpu className="w-4 h-4 text-primary" />
-            </div>
-            <h1 className="text-2xl font-extrabold text-white">AI Research Copilot</h1>
-          </div>
-          <p className="text-xs text-muted-strong mt-0.5">
-            Context-aware financial literacy research assistant with verified regulatory citations.
-          </p>
+    <div className="flex flex-col h-full">
+      {/* Topbar */}
+      <div className="flex items-center gap-4 px-7 py-3.5 border-b-2 border-divider">
+        <div className="font-heading font-800 text-base flex items-center gap-2">
+          <Cpu className="w-4 h-4 text-accent" />
+          Copilot
         </div>
-
-        <div className="text-[10px] font-mono text-primary bg-ink px-3 py-1.5 rounded-lg border border-hairline-dark">
-          NON-ADVISORY LITERACY ENGINE
+        <div className="flex gap-1.5 ml-4">
+          <span className="text-[11px] px-2.5 py-1 border border-divider font-heading font-600 bg-ink text-bg">
+            Portfolio context
+          </span>
+          <span className="text-[11px] px-2.5 py-1 border border-divider font-heading font-600">Filings</span>
+          <span className="text-[11px] px-2.5 py-1 border border-divider font-heading font-600">Web</span>
+        </div>
+        <div className="ml-auto">
+          <button
+            onClick={() => setMessages(messages.slice(0, 1))}
+            className="btn btn-secondary"
+          >
+            New thread
+          </button>
         </div>
       </div>
 
       {/* Suggested Quick Questions */}
-      <div className="space-y-2">
-        <span className="text-[11px] font-semibold text-muted uppercase tracking-wider flex items-center gap-1">
-          <Sparkles className="w-3 h-3 text-primary" />
-          <span>Suggested Research Queries:</span>
+      <div className="px-8 pt-5 flex flex-col gap-2">
+        <span className="kicker flex items-center gap-1.5">
+          <Sparkles className="w-3 h-3 text-accent" />
+          Suggested research queries
         </span>
         <div className="flex flex-wrap gap-2">
           {SAMPLE_QUESTIONS.map((q, idx) => (
             <button
               key={idx}
               onClick={() => handleSend(q)}
-              className="text-xs bg-surface-card hover:bg-surface-elevated border border-hairline-dark hover:border-primary/50 px-3 py-1.5 rounded-lg text-body text-left transition-all"
+              className="text-xs bg-surface hover:bg-accent-100 border border-divider hover:border-accent px-3 py-1.5 text-ink text-left transition-colors font-heading font-600"
             >
               {q}
             </button>
@@ -116,57 +120,54 @@ export default function CopilotPage() {
         </div>
       </div>
 
-      {/* Message Stream */}
-      <div className="space-y-4 min-h-[350px]">
+      {/* Messages */}
+      <div className="px-8 py-7 flex flex-col gap-6 flex-1 overflow-auto">
         {messages.map((msg) => {
           const isAssistant = msg.role === "assistant";
-          return (
-            <div
-              key={msg.id}
-              className={`p-5 rounded-xl border transition-all ${
-                isAssistant ? "double-bezel" : "bg-ink border-hairline-dark ml-8"
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                {isAssistant ? (
-                  <>
-                    <div className="w-6 h-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs">
-                      AI
-                    </div>
-                    <span className="text-xs font-bold text-white">Financial Doctor Copilot</span>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-6 h-6 rounded-md bg-surface-elevated text-muted-strong flex items-center justify-center">
-                      <User className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-xs font-bold text-body">You</span>
-                  </>
-                )}
-                <span className="text-[10px] font-mono text-muted ml-auto">
-                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </div>
 
-              <div className="text-xs text-body whitespace-pre-line leading-relaxed">
+          if (!isAssistant) {
+            return (
+              <div
+                key={msg.id}
+                className="self-end max-w-[65%] bg-ink text-bg px-4.5 py-3.5 text-sm leading-relaxed"
+              >
                 {msg.content}
               </div>
+            );
+          }
 
-              {/* Factors pill list if present */}
+          return (
+            <div key={msg.id} className="max-w-[80%] flex flex-col gap-2.5">
+              <div className="font-heading font-800 text-[10px] tracking-[0.14em] uppercase text-accent flex items-center gap-2">
+                <span className="w-2.5 h-2.5 bg-accent inline-block" />
+                finX Copilot
+                {msg.citations && msg.citations.length > 0 && <> &middot; {msg.citations.length} sources</>}
+              </div>
+              <div className="text-sm leading-relaxed whitespace-pre-line text-ink">{msg.content}</div>
+
+              {/* Factor tags */}
               {msg.factors && msg.factors.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-3">
+                <div className="flex flex-wrap gap-1.5 mt-1">
                   {msg.factors.map((f, i) => (
-                    <span key={i} className="text-[10px] bg-ink border border-hairline-dark px-2 py-0.5 rounded text-muted-strong font-mono">
+                    <span key={i} className="tag tag-outline">
                       {f}
                     </span>
                   ))}
                 </div>
               )}
 
-              {/* Verified Citations */}
+              {/* Source citations */}
               {msg.citations && msg.citations.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-hairline-dark">
-                  <SourceList sources={msg.citations} title="Verified Grounding Citations" />
+                <div className="flex gap-1.5 flex-wrap mt-1">
+                  {msg.citations.map((c, i) => (
+                    <span
+                      key={c.id || i}
+                      className="text-[10.5px] font-heading font-600 px-2 py-1 border border-divider bg-bg"
+                    >
+                      <span className="text-accent mr-1.5">{String(i + 1).padStart(2, "0")}</span>
+                      {c.title}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
@@ -174,30 +175,50 @@ export default function CopilotPage() {
         })}
 
         {loading && (
-          <div className="double-bezel p-5 flex items-center gap-3 text-xs text-muted-strong">
-            <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-            <span>Consulting deterministic math engine & retrieving regulatory sources...</span>
+          <div className="max-w-[80%] flex items-center gap-3 text-xs text-ink/60">
+            <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            <span>Consulting deterministic math engine &amp; retrieving regulatory sources...</span>
           </div>
         )}
       </div>
 
-      {/* Query Input Box */}
-      <div className="double-bezel p-3 flex items-center gap-2 bg-ink">
-        <input
-          type="text"
-          value={inputQuery}
-          onChange={(e) => setInputQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Ask a question about your portfolio, risk, or regulatory guidance..."
-          className="flex-1 bg-transparent px-3 py-2 text-xs text-white placeholder-muted outline-none"
-        />
-        <button
-          onClick={() => handleSend()}
-          disabled={loading || !inputQuery.trim()}
-          className="bg-primary hover:bg-primary-active disabled:opacity-30 text-primary-foreground p-2.5 rounded-lg font-bold transition-all"
-        >
-          <Send className="w-4 h-4" />
-        </button>
+      {/* Suggestions + Input */}
+      <div className="border-t-2 border-divider px-8 py-4 bg-surface">
+        <div className="flex gap-2 flex-wrap mb-3">
+          <span className="text-xs px-3 py-1.5 border border-divider font-heading font-600 cursor-pointer bg-bg text-ink">
+            What about tax implications?
+          </span>
+          <span className="text-xs px-3 py-1.5 border border-divider font-heading font-600 cursor-pointer bg-bg text-ink">
+            Show me a rebalancing plan
+          </span>
+        </div>
+        <div className="bg-bg border border-divider px-3.5 py-3 flex flex-col gap-2.5">
+          <input
+            type="text"
+            value={inputQuery}
+            onChange={(e) => setInputQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Ask a follow-up..."
+            className="w-full bg-transparent text-sm text-ink placeholder-ink/40 outline-none"
+          />
+          <div className="flex justify-between items-center">
+            <div className="flex gap-1.5">
+              <span className="text-[11px] px-2.5 py-1 border border-divider font-heading font-600 text-ink flex items-center gap-1">
+                <Paperclip className="w-3 h-3" /> Attach
+              </span>
+              <span className="text-[11px] px-2.5 py-1 border border-divider font-heading font-600 text-ink flex items-center gap-1">
+                <Terminal className="w-3 h-3" /> Commands
+              </span>
+            </div>
+            <button
+              onClick={() => handleSend()}
+              disabled={loading || !inputQuery.trim()}
+              className="btn btn-primary"
+            >
+              Send <Send className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

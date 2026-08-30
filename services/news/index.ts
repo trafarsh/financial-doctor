@@ -54,7 +54,7 @@ const DEMO_NEWS: NewsArticle[] = [
   },
   {
     id: "news_5",
-    title: "Indian Mutual Fund SIP Inflows Cross Record ₹20,000 Crore Mark in Monthly Inflows",
+    title: "Indian HFUND SIP Inflows Cross Record ₹20,000 Crore Mark in Monthly Inflows",
     url: "https://www.amfiindia.com/research-information/other-data/mf-industry-data",
     source: "AMFI India",
     summary: "Systematic Investment Plans demonstrate sustained domestic retail participation across equity index and multicap funds.",

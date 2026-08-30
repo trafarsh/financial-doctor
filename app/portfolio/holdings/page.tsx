@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { PlusCircle, Trash2, Edit2, Check, X, Layers, TrendingDown, ArrowLeft } from "lucide-react";
+import { PlusCircle, Trash2, Edit2, Check, X, Layers, TrendingDown, ArrowLeft, Sliders } from "lucide-react";
 import { Asset, Liability, AssetInput, LiabilityInput } from "@/lib/types";
 import { ExportButton } from "@/components/ui/ExportButton";
 
@@ -87,27 +87,24 @@ export default function HoldingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="flex flex-col gap-6 px-8 py-8 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-hairline-dark pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-divider pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <Link href="/portfolio/overview" className="text-muted hover:text-white">
+            <Link href="/portfolio/overview" className="text-ink/50 hover:text-accent">
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <h1 className="text-2xl font-extrabold text-white">Holdings Management</h1>
+            <h1 className="text-2xl font-heading font-800 text-ink">Holdings Management</h1>
           </div>
-          <p className="text-xs text-muted-strong mt-0.5">
+          <p className="text-xs text-ink/60 mt-0.5">
             Inspect, edit, or delete individual holdings. Every change updates the net-worth snapshot trend.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <ExportButton assets={assets} liabilities={liabilities} />
-          <Link
-            href="/import"
-            className="bg-primary hover:bg-primary-active text-primary-foreground text-xs font-bold px-3.5 py-2 rounded-md flex items-center gap-1.5 transition-all shadow-sm"
-          >
+          <Link href="/import" className="btn btn-primary">
             <PlusCircle className="w-3.5 h-3.5" />
             <span>Add Row</span>
           </Link>
@@ -115,69 +112,71 @@ export default function HoldingsPage() {
       </div>
 
       {/* Assets Table */}
-      <div className="double-bezel p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            <Layers className="w-4 h-4 text-trading-up" />
+      <div className="bg-surface">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b-2 border-divider">
+          <h3 className="text-base font-heading font-800 text-ink flex items-center gap-2">
+            <Layers className="w-4 h-4 text-up" />
             <span>Tracked Assets ({assets.length})</span>
           </h3>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-ink text-muted-strong uppercase text-[10px] tracking-wider border-b border-hairline-dark">
+          <table className="table">
+            <thead>
               <tr>
-                <th className="p-3">Asset Name</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Sector / Tag</th>
-                <th className="p-3 font-mono text-right">Value (₹)</th>
-                <th className="p-3 text-right">Actions</th>
+                <th>Asset Name</th>
+                <th>Type</th>
+                <th>Sector / Tag</th>
+                <th className="text-right">Value (₹)</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-hairline-dark">
+            <tbody>
               {assets.map((asset) => {
                 const isEditing = editingAssetId === asset.id;
                 return (
-                  <tr key={asset.id} className="hover:bg-ink/50 transition-colors">
-                    <td className="p-3 font-semibold text-white">
+                  <tr key={asset.id}>
+                    <td className="font-semibold text-ink">
                       {isEditing ? (
                         <input
                           type="text"
                           value={editAssetName}
                           onChange={(e) => setEditAssetName(e.target.value)}
-                          className="bg-ink border border-primary rounded px-2 py-1 text-xs text-white"
+                          className="input"
                         />
                       ) : (
                         asset.name
                       )}
                     </td>
-                    <td className="p-3 text-muted-strong capitalize">{asset.type.replace("_", " ")}</td>
-                    <td className="p-3 text-muted">{asset.sector || "General"}</td>
-                    <td className="p-3 font-mono font-bold text-white text-right">
+                    <td className="text-ink/60 capitalize">
+                      {asset.type === "mutual_fund" ? "HFUND" : asset.type.replace("_", " ")}
+                    </td>
+                    <td className="text-ink/45">{asset.sector || "General"}</td>
+                    <td className="font-heading font-700 text-ink text-right">
                       {isEditing ? (
                         <input
                           type="number"
                           value={editAssetValue}
                           onChange={(e) => setEditAssetValue(Number(e.target.value))}
-                          className="bg-ink border border-primary rounded px-2 py-1 text-xs text-white font-mono text-right"
+                          className="input text-right"
                         />
                       ) : (
                         `₹${asset.value.toLocaleString("en-IN")}`
                       )}
                     </td>
-                    <td className="p-3 text-right space-x-2">
+                    <td className="text-right space-x-2">
                       {isEditing ? (
                         <>
                           <button
                             onClick={() => saveEditAsset(asset.id)}
-                            className="p-1 text-trading-up hover:bg-ink rounded"
+                            className="p-1 text-up hover:opacity-70"
                             title="Save"
                           >
                             <Check className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setEditingAssetId(null)}
-                            className="p-1 text-muted hover:bg-ink rounded"
+                            className="p-1 text-ink/45 hover:text-ink"
                             title="Cancel"
                           >
                             <X className="w-4 h-4" />
@@ -185,16 +184,23 @@ export default function HoldingsPage() {
                         </>
                       ) : (
                         <>
+                          <Link
+                            href={`/simulator?holdingId=${asset.id}`}
+                            className="p-1 text-ink/45 hover:text-accent inline-block"
+                            title="Simulate stress testing"
+                          >
+                            <Sliders className="w-3.5 h-3.5" />
+                          </Link>
                           <button
                             onClick={() => startEditAsset(asset)}
-                            className="p-1 text-muted hover:text-primary"
+                            className="p-1 text-ink/45 hover:text-accent"
                             title="Edit"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteAsset(asset.id)}
-                            className="p-1 text-muted hover:text-trading-down"
+                            className="p-1 text-ink/45 hover:text-accent"
                             title="Delete"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -211,38 +217,38 @@ export default function HoldingsPage() {
       </div>
 
       {/* Liabilities Table */}
-      <div className="double-bezel p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            <TrendingDown className="w-4 h-4 text-trading-down" />
-            <span>Liabilities & Debts ({liabilities.length})</span>
+      <div className="bg-surface">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b-2 border-divider">
+          <h3 className="text-base font-heading font-800 text-ink flex items-center gap-2">
+            <TrendingDown className="w-4 h-4 text-accent" />
+            <span>Liabilities &amp; Debts ({liabilities.length})</span>
           </h3>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-ink text-muted-strong uppercase text-[10px] tracking-wider border-b border-hairline-dark">
+          <table className="table">
+            <thead>
               <tr>
-                <th className="p-3">Liability Name</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Interest Rate</th>
-                <th className="p-3 font-mono text-right">Outstanding (₹)</th>
-                <th className="p-3 text-right">Actions</th>
+                <th>Liability Name</th>
+                <th>Type</th>
+                <th>Interest Rate</th>
+                <th className="text-right">Outstanding (₹)</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-hairline-dark">
+            <tbody>
               {liabilities.map((l) => (
-                <tr key={l.id} className="hover:bg-ink/50 transition-colors">
-                  <td className="p-3 font-semibold text-white">{l.name}</td>
-                  <td className="p-3 text-muted-strong capitalize">{l.type.replace("_", " ")}</td>
-                  <td className="p-3 text-muted">{l.interestRate ? `${l.interestRate}%` : "—"}</td>
-                  <td className="p-3 font-mono font-bold text-trading-down text-right">
+                <tr key={l.id}>
+                  <td className="font-semibold text-ink">{l.name}</td>
+                  <td className="text-ink/60 capitalize">{l.type.replace("_", " ")}</td>
+                  <td className="text-ink/45">{l.interestRate ? `${l.interestRate}%` : "—"}</td>
+                  <td className="font-heading font-700 text-accent text-right">
                     ₹{l.amount.toLocaleString("en-IN")}
                   </td>
-                  <td className="p-3 text-right">
+                  <td className="text-right">
                     <button
                       onClick={() => handleDeleteLiability(l.id)}
-                      className="p-1 text-muted hover:text-trading-down"
+                      className="p-1 text-ink/45 hover:text-accent"
                       title="Delete"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

@@ -47,18 +47,15 @@ export function ExportButton({ assets, liabilities }: ExportButtonProps) {
   };
 
   return (
-    <button
-      onClick={handleExport}
-      className="bg-surface-card hover:bg-surface-elevated border border-hairline-dark hover:border-primary text-xs font-semibold text-body hover:text-primary px-3.5 py-2 rounded-md flex items-center gap-2 transition-all shadow-sm active:scale-95"
-    >
+    <button onClick={handleExport} className="btn btn-secondary">
       {exported ? (
         <>
-          <Check className="w-3.5 h-3.5 text-trading-up" />
-          <span className="text-trading-up">Exported!</span>
+          <Check className="w-3.5 h-3.5" style={{ color: "#0a7c4a" }} />
+          <span style={{ color: "#0a7c4a" }}>Exported!</span>
         </>
       ) : (
         <>
-          <Download className="w-3.5 h-3.5 text-primary" />
+          <Download className="w-3.5 h-3.5" />
           <span>Export to Excel (.xlsx)</span>
         </>
       )}

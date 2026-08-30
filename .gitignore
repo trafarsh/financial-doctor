@@ -26,3 +26,12 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Vercel & Claude
+.vercel/
+.claude/
+
+# Assets & Temp
+AI Financial Analyzer UI.zip
+AI Financial Analyzer UI/
+supabase/.temp/

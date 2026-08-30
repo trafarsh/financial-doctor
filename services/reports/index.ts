@@ -21,7 +21,7 @@ export class ReportsService {
       allocationMap[a.type] = (allocationMap[a.type] || 0) + Number(a.value);
     }
     const assetAllocation = Object.entries(allocationMap).map(([type, val]) => ({
-      type: type.replace("_", " ").toUpperCase(),
+      type: type === "mutual_fund" ? "HFUND" : type.replace("_", " ").toUpperCase(),
       value: val,
       pct: Math.round((val / totalAssets) * 1000) / 10,
     }));
@@ -86,7 +86,7 @@ export class ReportsService {
         },
         {
           id: "cit_2",
-          title: "AMFI Mutual Fund Industry Snapshot",
+          title: "AMFI HFUND Industry Snapshot",
           url: "https://www.amfiindia.com",
           source: "AMFI",
         },
