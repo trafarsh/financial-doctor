@@ -21,6 +21,7 @@ const NAV_SECTIONS: { label: string; items: { name: string; href: string }[] }[]
       { name: "Scam detector", href: "/scam-detector" },
       { name: "Simulator", href: "/simulator" },
       { name: "Debt comparison", href: "/debt-compare" },
+      { name: "Scheme eligibility", href: "/schemes" },
     ],
   },
   {

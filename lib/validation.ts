@@ -164,3 +164,20 @@ export const authCredentialsSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
+
+// ------------------------------------------------------------
+// 7. Government Scheme Eligibility Engine Schemas
+// ------------------------------------------------------------
+export const householdProfileSchema = z.object({
+  district: z.string().min(1, "District is required"),
+  landHoldingHa: z.number().nonnegative("Land holding must be 0 or positive"),
+  primaryCrop: z.string().min(1, "Primary crop is required"),
+  annualIncome: z.number().nonnegative("Annual income must be 0 or positive"),
+  socialCategory: z.enum(["OBC", "SC", "ST", "General"]),
+  familySize: z.number().int().positive("Family size must be at least 1"),
+  existingKcc: z.boolean(),
+});
+
+export const schemeEvaluationLLMResponseSchema = z.object({
+  explanation: z.string().min(1),
+});

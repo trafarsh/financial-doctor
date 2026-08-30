@@ -462,3 +462,49 @@ export interface ComprehensiveReport {
   aiInsights: string[];
   citations: Citation[];
 }
+
+// ------------------------------------------------------------
+// 14. Government Scheme Eligibility Engine
+// ------------------------------------------------------------
+export interface HouseholdProfile {
+  district: string;
+  landHoldingHa: number;
+  primaryCrop: string;
+  annualIncome: number;
+  socialCategory: "OBC" | "SC" | "ST" | "General";
+  familySize: number;
+  existingKcc: boolean;
+}
+
+export interface GovernmentScheme {
+  id: string;
+  name: string;
+  agency: string;
+  benefitDescription: string;
+  estimatedBenefitAmount: number;
+  requiredDocuments: string[];
+  lastVerified: string;
+  sourceUrl: string;
+  eligibilityRules: {
+    maxLandHa?: number;
+    minLandHa?: number;
+    maxIncome?: number;
+    socialCategories?: string[];
+    primaryCrops?: string[];
+    requiresNoKcc?: boolean;
+    requiredDistricts?: string[];
+  };
+}
+
+export interface SchemeMatchResult {
+  scheme: GovernmentScheme;
+  isEligible: boolean;
+  matchingCriteria: string[];
+  failingCriteria: string[];
+}
+
+export interface SchemeEvaluationResponse {
+  profile: HouseholdProfile;
+  matches: SchemeMatchResult[];
+  explanation: string;
+}
