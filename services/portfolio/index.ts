@@ -1,8 +1,10 @@
 // ============================================================
 // FINANCIAL DOCTOR (finX) — Portfolio Management Service
-// Full CRUD against Supabase. No mock/demo fallback data —
-// holdings only ever come from real user input (manual entry
-// or CSV/Excel import) and real Supabase reads.
+// Full CRUD against Supabase. When Supabase is configured, all
+// operations hit the real database; errors propagate to the caller
+// so the UI can show meaningful feedback instead of stale demo data.
+// Demo fallback only activates when NEXT_PUBLIC_SUPABASE_URL is
+// absent or contains "placeholder".
 // ============================================================
 
 import { Asset, Liability, AssetInput, LiabilityInput, NetWorthSnapshot } from "@/lib/types";
@@ -49,22 +51,15 @@ function mapSnapshotRow(r: any): NetWorthSnapshot {
   };
 }
 
-// In-memory demo store for when Supabase is not configured or offline
+// Determine whether Supabase is actually configured
 const isPlaceholderUrl = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder");
 
-let demoAssets: any[] = [
-  { id: "demo_a1", user_id: "demo_user", type: "bank", name: "HDFC Savings Account", value: 200000, last_updated: new Date().toISOString() },
-  { id: "demo_a2", user_id: "demo_user", type: "stock", name: "Reliance Industries", value: 600000, quantity: 200, sector: "Energy", last_updated: new Date().toISOString() },
-  { id: "demo_a3", user_id: "demo_user", type: "gold", name: "Sovereign Gold Bonds", value: 200000, last_updated: new Date().toISOString() },
-];
-
-let demoLiabilities: any[] = [
-  { id: "demo_l1", user_id: "demo_user", type: "loan", name: "Car Loan (HDFC)", amount: 500000, interest_rate: 8.75 },
-];
-
-let demoSnapshots: any[] = [
-  { id: "demo_s1", user_id: "demo_user", total_assets: 1000000, total_liabilities: 500000, net_worth: 500000, computed_at: new Date().toISOString() }
-];
+// In-memory demo store — ONLY used when Supabase is not configured.
+// When Supabase IS configured (real project), errors propagate rather
+// than silently falling back to this stale data.
+let demoAssets: any[] = [];
+let demoLiabilities: any[] = [];
+let demoSnapshots: any[] = [];
 
 export class PortfolioService {
   /**
@@ -76,25 +71,29 @@ export class PortfolioService {
     netWorthSummary: { totalAssets: number; totalLiabilities: number; netWorth: number };
   }> {
     if (!isPlaceholderUrl) {
-      try {
-        const supabase = createServiceClient();
-        const [assetsRes, liabilitiesRes] = await Promise.all([
-          supabase.from("assets").select("*").eq("user_id", userId).order("last_updated", { ascending: false }),
-          supabase.from("liabilities").select("*").eq("user_id", userId),
-        ]);
+      const supabase = createServiceClient();
+      const [assetsRes, liabilitiesRes] = await Promise.all([
+        supabase.from("assets").select("*").eq("user_id", userId).order("last_updated", { ascending: false }),
+        supabase.from("liabilities").select("*").eq("user_id", userId),
+      ]);
 
-        if (!assetsRes.error && !liabilitiesRes.error) {
-          const assets = (assetsRes.data || []).map(mapAssetRow);
-          const liabilities = (liabilitiesRes.data || []).map(mapLiabilityRow);
-          const netWorthSummary = computeNetWorth(assets, liabilities);
-
-          return { assets, liabilities, netWorthSummary };
-        }
-      } catch (e) {
-        console.warn("[Portfolio] Supabase load failed, falling back to demo mode:", e);
+      if (assetsRes.error) {
+        console.error("[Portfolio] Supabase assets query failed:", assetsRes.error);
+        throw new Error(`Failed to load assets: ${assetsRes.error.message}`);
       }
+      if (liabilitiesRes.error) {
+        console.error("[Portfolio] Supabase liabilities query failed:", liabilitiesRes.error);
+        throw new Error(`Failed to load liabilities: ${liabilitiesRes.error.message}`);
+      }
+
+      const assets = (assetsRes.data || []).map(mapAssetRow);
+      const liabilities = (liabilitiesRes.data || []).map(mapLiabilityRow);
+      const netWorthSummary = computeNetWorth(assets, liabilities);
+
+      return { assets, liabilities, netWorthSummary };
     }
 
+    // Demo fallback — only when Supabase is not configured
     const assets = demoAssets.map(mapAssetRow);
     const liabilities = demoLiabilities.map(mapLiabilityRow);
     const netWorthSummary = computeNetWorth(assets, liabilities);
@@ -106,27 +105,27 @@ export class PortfolioService {
    */
   async createAsset(userId: string, input: AssetInput): Promise<Asset> {
     if (!isPlaceholderUrl) {
-      try {
-        const supabase = createServiceClient();
-        const { data, error } = await supabase
-          .from("assets")
-          .insert({
-            user_id: userId,
-            type: input.type,
-            name: input.name,
-            symbol: input.symbol,
-            sector: input.sector,
-            value: input.value,
-            quantity: input.quantity,
-            purchase_price: input.purchasePrice,
-          })
-          .select()
-          .single();
+      const supabase = createServiceClient();
+      const { data, error } = await supabase
+        .from("assets")
+        .insert({
+          user_id: userId,
+          type: input.type,
+          name: input.name,
+          symbol: input.symbol,
+          sector: input.sector,
+          value: input.value,
+          quantity: input.quantity,
+          purchase_price: input.purchasePrice,
+        })
+        .select()
+        .single();
 
-        if (!error && data) return mapAssetRow(data);
-      } catch (e) {
-        console.warn("[Portfolio] Supabase createAsset failed, falling back to demo mode:", e);
+      if (error) {
+        console.error("[Portfolio] Supabase createAsset failed:", error);
+        throw new Error(`Failed to create asset: ${error.message}`);
       }
+      return mapAssetRow(data);
     }
 
     const newAsset = {
@@ -150,29 +149,29 @@ export class PortfolioService {
    */
   async updateAsset(userId: string, assetId: string, input: Partial<AssetInput>): Promise<Asset> {
     if (!isPlaceholderUrl) {
-      try {
-        const supabase = createServiceClient();
-        const patch: Record<string, any> = { last_updated: new Date().toISOString() };
-        if (input.type !== undefined) patch.type = input.type;
-        if (input.name !== undefined) patch.name = input.name;
-        if (input.symbol !== undefined) patch.symbol = input.symbol;
-        if (input.sector !== undefined) patch.sector = input.sector;
-        if (input.value !== undefined) patch.value = input.value;
-        if (input.quantity !== undefined) patch.quantity = input.quantity;
-        if (input.purchasePrice !== undefined) patch.purchase_price = input.purchasePrice;
+      const supabase = createServiceClient();
+      const patch: Record<string, any> = { last_updated: new Date().toISOString() };
+      if (input.type !== undefined) patch.type = input.type;
+      if (input.name !== undefined) patch.name = input.name;
+      if (input.symbol !== undefined) patch.symbol = input.symbol;
+      if (input.sector !== undefined) patch.sector = input.sector;
+      if (input.value !== undefined) patch.value = input.value;
+      if (input.quantity !== undefined) patch.quantity = input.quantity;
+      if (input.purchasePrice !== undefined) patch.purchase_price = input.purchasePrice;
 
-        const { data, error } = await supabase
-          .from("assets")
-          .update(patch)
-          .eq("id", assetId)
-          .eq("user_id", userId)
-          .select()
-          .single();
+      const { data, error } = await supabase
+        .from("assets")
+        .update(patch)
+        .eq("id", assetId)
+        .eq("user_id", userId)
+        .select()
+        .single();
 
-        if (!error && data) return mapAssetRow(data);
-      } catch (e) {
-        console.warn("[Portfolio] Supabase updateAsset failed, falling back to demo mode:", e);
+      if (error) {
+        console.error("[Portfolio] Supabase updateAsset failed:", error);
+        throw new Error(`Failed to update asset: ${error.message}`);
       }
+      return mapAssetRow(data);
     }
 
     const assetIndex = demoAssets.findIndex((a) => a.id === assetId);
@@ -196,13 +195,13 @@ export class PortfolioService {
    */
   async deleteAsset(userId: string, assetId: string): Promise<void> {
     if (!isPlaceholderUrl) {
-      try {
-        const supabase = createServiceClient();
-        const { error } = await supabase.from("assets").delete().eq("id", assetId).eq("user_id", userId);
-        if (!error) return;
-      } catch (e) {
-        console.warn("[Portfolio] Supabase deleteAsset failed, falling back to demo mode:", e);
+      const supabase = createServiceClient();
+      const { error } = await supabase.from("assets").delete().eq("id", assetId).eq("user_id", userId);
+      if (error) {
+        console.error("[Portfolio] Supabase deleteAsset failed:", error);
+        throw new Error(`Failed to delete asset: ${error.message}`);
       }
+      return;
     }
 
     demoAssets = demoAssets.filter((a) => a.id !== assetId);
@@ -213,25 +212,25 @@ export class PortfolioService {
    */
   async createLiability(userId: string, input: LiabilityInput): Promise<Liability> {
     if (!isPlaceholderUrl) {
-      try {
-        const supabase = createServiceClient();
-        const { data, error } = await supabase
-          .from("liabilities")
-          .insert({
-            user_id: userId,
-            type: input.type,
-            name: input.name,
-            amount: input.amount,
-            interest_rate: input.interestRate,
-            monthly_payment: input.monthlyPayment,
-          })
-          .select()
-          .single();
+      const supabase = createServiceClient();
+      const { data, error } = await supabase
+        .from("liabilities")
+        .insert({
+          user_id: userId,
+          type: input.type,
+          name: input.name,
+          amount: input.amount,
+          interest_rate: input.interestRate,
+          monthly_payment: input.monthlyPayment,
+        })
+        .select()
+        .single();
 
-        if (!error && data) return mapLiabilityRow(data);
-      } catch (e) {
-        console.warn("[Portfolio] Supabase createLiability failed, falling back to demo mode:", e);
+      if (error) {
+        console.error("[Portfolio] Supabase createLiability failed:", error);
+        throw new Error(`Failed to create liability: ${error.message}`);
       }
+      return mapLiabilityRow(data);
     }
 
     const newLiability = {
@@ -252,27 +251,27 @@ export class PortfolioService {
    */
   async updateLiability(userId: string, liabilityId: string, input: Partial<LiabilityInput>): Promise<Liability> {
     if (!isPlaceholderUrl) {
-      try {
-        const supabase = createServiceClient();
-        const patch: Record<string, any> = {};
-        if (input.type !== undefined) patch.type = input.type;
-        if (input.name !== undefined) patch.name = input.name;
-        if (input.amount !== undefined) patch.amount = input.amount;
-        if (input.interestRate !== undefined) patch.interest_rate = input.interestRate;
-        if (input.monthlyPayment !== undefined) patch.monthly_payment = input.monthlyPayment;
+      const supabase = createServiceClient();
+      const patch: Record<string, any> = {};
+      if (input.type !== undefined) patch.type = input.type;
+      if (input.name !== undefined) patch.name = input.name;
+      if (input.amount !== undefined) patch.amount = input.amount;
+      if (input.interestRate !== undefined) patch.interest_rate = input.interestRate;
+      if (input.monthlyPayment !== undefined) patch.monthly_payment = input.monthlyPayment;
 
-        const { data, error } = await supabase
-          .from("liabilities")
-          .update(patch)
-          .eq("id", liabilityId)
-          .eq("user_id", userId)
-          .select()
-          .single();
+      const { data, error } = await supabase
+        .from("liabilities")
+        .update(patch)
+        .eq("id", liabilityId)
+        .eq("user_id", userId)
+        .select()
+        .single();
 
-        if (!error && data) return mapLiabilityRow(data);
-      } catch (e) {
-        console.warn("[Portfolio] Supabase updateLiability failed, falling back to demo mode:", e);
+      if (error) {
+        console.error("[Portfolio] Supabase updateLiability failed:", error);
+        throw new Error(`Failed to update liability: ${error.message}`);
       }
+      return mapLiabilityRow(data);
     }
 
     const liabilityIndex = demoLiabilities.findIndex((l) => l.id === liabilityId);
@@ -293,13 +292,13 @@ export class PortfolioService {
    */
   async deleteLiability(userId: string, liabilityId: string): Promise<void> {
     if (!isPlaceholderUrl) {
-      try {
-        const supabase = createServiceClient();
-        const { error } = await supabase.from("liabilities").delete().eq("id", liabilityId).eq("user_id", userId);
-        if (!error) return;
-      } catch (e) {
-        console.warn("[Portfolio] Supabase deleteLiability failed, falling back to demo mode:", e);
+      const supabase = createServiceClient();
+      const { error } = await supabase.from("liabilities").delete().eq("id", liabilityId).eq("user_id", userId);
+      if (error) {
+        console.error("[Portfolio] Supabase deleteLiability failed:", error);
+        throw new Error(`Failed to delete liability: ${error.message}`);
       }
+      return;
     }
 
     demoLiabilities = demoLiabilities.filter((l) => l.id !== liabilityId);
@@ -313,23 +312,23 @@ export class PortfolioService {
     computed: { totalAssets: number; totalLiabilities: number; netWorth: number }
   ): Promise<NetWorthSnapshot> {
     if (!isPlaceholderUrl) {
-      try {
-        const supabase = createServiceClient();
-        const { data, error } = await supabase
-          .from("net_worth_snapshots")
-          .insert({
-            user_id: userId,
-            total_assets: computed.totalAssets,
-            total_liabilities: computed.totalLiabilities,
-            net_worth: computed.netWorth,
-          })
-          .select()
-          .single();
+      const supabase = createServiceClient();
+      const { data, error } = await supabase
+        .from("net_worth_snapshots")
+        .insert({
+          user_id: userId,
+          total_assets: computed.totalAssets,
+          total_liabilities: computed.totalLiabilities,
+          net_worth: computed.netWorth,
+        })
+        .select()
+        .single();
 
-        if (!error && data) return mapSnapshotRow(data);
-      } catch (e) {
-        console.warn("[Portfolio] Supabase recordSnapshot failed, falling back to demo mode:", e);
+      if (error) {
+        console.error("[Portfolio] Supabase recordSnapshot failed:", error);
+        throw new Error(`Failed to record snapshot: ${error.message}`);
       }
+      return mapSnapshotRow(data);
     }
 
     const newSnapshot = {
@@ -354,57 +353,71 @@ export class PortfolioService {
     newLiabilities: LiabilityInput[]
   ): Promise<NetWorthSnapshot> {
     if (!isPlaceholderUrl) {
-      try {
-        const supabase = createServiceClient();
+      const supabase = createServiceClient();
 
-        const [deleteAssetsRes, deleteLiabilitiesRes] = await Promise.all([
-          supabase.from("assets").delete().eq("user_id", userId),
-          supabase.from("liabilities").delete().eq("user_id", userId),
-        ]);
+      // Delete existing holdings
+      const [deleteAssetsRes, deleteLiabilitiesRes] = await Promise.all([
+        supabase.from("assets").delete().eq("user_id", userId),
+        supabase.from("liabilities").delete().eq("user_id", userId),
+      ]);
 
-        if (!deleteAssetsRes.error && !deleteLiabilitiesRes.error) {
-          if (newAssets.length > 0) {
-            const { error } = await supabase.from("assets").insert(
-              newAssets.map((a) => ({
-                user_id: userId,
-                type: a.type,
-                name: a.name,
-                symbol: a.symbol,
-                sector: a.sector,
-                value: a.value,
-                quantity: a.quantity,
-                purchase_price: a.purchasePrice,
-              }))
-            );
-            if (error) throw error;
-          }
-
-          if (newLiabilities.length > 0) {
-            const { error } = await supabase.from("liabilities").insert(
-              newLiabilities.map((l) => ({
-                user_id: userId,
-                type: l.type,
-                name: l.name,
-                amount: l.amount,
-                interest_rate: l.interestRate,
-                monthly_payment: l.monthlyPayment,
-              }))
-            );
-            if (error) throw error;
-          }
-
-          const computed = computeNetWorth(
-            newAssets.map((a) => ({ ...a, id: "temp", userId, lastUpdated: new Date().toISOString() })),
-            newLiabilities.map((l) => ({ ...l, id: "temp", userId }))
-          );
-
-          return this.recordSnapshot(userId, computed);
-        }
-      } catch (e) {
-        console.warn("[Portfolio] Supabase replaceHoldingsAndSnapshot failed, falling back to demo mode:", e);
+      if (deleteAssetsRes.error) {
+        console.error("[Portfolio] Supabase delete assets failed:", deleteAssetsRes.error);
+        throw new Error(`Failed to clear existing assets: ${deleteAssetsRes.error.message}`);
       }
+      if (deleteLiabilitiesRes.error) {
+        console.error("[Portfolio] Supabase delete liabilities failed:", deleteLiabilitiesRes.error);
+        throw new Error(`Failed to clear existing liabilities: ${deleteLiabilitiesRes.error.message}`);
+      }
+
+      // Insert new assets
+      if (newAssets.length > 0) {
+        const { error } = await supabase.from("assets").insert(
+          newAssets.map((a) => ({
+            user_id: userId,
+            type: a.type,
+            name: a.name,
+            symbol: a.symbol,
+            sector: a.sector,
+            value: a.value,
+            quantity: a.quantity,
+            purchase_price: a.purchasePrice,
+          }))
+        );
+        if (error) {
+          console.error("[Portfolio] Supabase insert assets failed:", error);
+          throw new Error(`Failed to insert imported assets: ${error.message}`);
+        }
+      }
+
+      // Insert new liabilities
+      if (newLiabilities.length > 0) {
+        const { error } = await supabase.from("liabilities").insert(
+          newLiabilities.map((l) => ({
+            user_id: userId,
+            type: l.type,
+            name: l.name,
+            amount: l.amount,
+            interest_rate: l.interestRate,
+            monthly_payment: l.monthlyPayment,
+          }))
+        );
+        if (error) {
+          console.error("[Portfolio] Supabase insert liabilities failed:", error);
+          throw new Error(`Failed to insert imported liabilities: ${error.message}`);
+        }
+      }
+
+      // Compute and record snapshot
+      const computed = computeNetWorth(
+        newAssets.map((a) => ({ ...a, id: "temp", userId, lastUpdated: new Date().toISOString() })),
+        newLiabilities.map((l) => ({ ...l, id: "temp", userId }))
+      );
+
+      return this.recordSnapshot(userId, computed);
     }
 
+    // Demo fallback — only when Supabase is not configured
     demoAssets = newAssets.map((a, i) => ({
       id: `demo_a_${Date.now()}_${i}`,
       user_id: userId,
@@ -441,18 +454,18 @@ export class PortfolioService {
    */
   async getSnapshotHistory(userId: string): Promise<NetWorthSnapshot[]> {
     if (!isPlaceholderUrl) {
-      try {
-        const supabase = createServiceClient();
-        const { data, error } = await supabase
-          .from("net_worth_snapshots")
-          .select("*")
-          .eq("user_id", userId)
-          .order("computed_at", { ascending: true });
+      const supabase = createServiceClient();
+      const { data, error } = await supabase
+        .from("net_worth_snapshots")
+        .select("*")
+        .eq("user_id", userId)
+        .order("computed_at", { ascending: true });
 
-        if (!error && data) return data.map(mapSnapshotRow);
-      } catch (e) {
-        console.warn("[Portfolio] Supabase getSnapshotHistory failed, falling back to demo mode:", e);
+      if (error) {
+        console.error("[Portfolio] Supabase getSnapshotHistory failed:", error);
+        throw new Error(`Failed to load snapshot history: ${error.message}`);
       }
+      return (data || []).map(mapSnapshotRow);
     }
 
     return demoSnapshots.map(mapSnapshotRow);
