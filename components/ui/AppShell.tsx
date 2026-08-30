@@ -3,6 +3,7 @@
 import React from "react";
 import { usePathname } from "next/navigation";
 import { Navigation } from "@/components/ui/Navigation";
+import { SyncStatus } from "@/components/ui/SyncStatus";
 
 const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboarding"];
 
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex-1 w-full flex">
       <Navigation />
       <main className="flex-1 min-w-0 flex flex-col">{children}</main>
+      <SyncStatus />
     </div>
   );
 }

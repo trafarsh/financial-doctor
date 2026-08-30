@@ -144,7 +144,21 @@ export const simulationLLMResponseSchema = z.object({
 });
 
 // ------------------------------------------------------------
-// 5. Auth Schemas
+// 5. Rural Debt Comparison Schemas
+// ------------------------------------------------------------
+export const debtComparisonRequestSchema = z.object({
+  principal: z.number().positive("Loan amount must be greater than 0").max(10000000),
+  informalCharge: z.number().nonnegative("Charge must be 0 or positive").max(1000000),
+  chargeUnit: z.enum(["per_month", "per_week", "lump_sum"]),
+  termMonths: z.number().int().min(1).max(120),
+});
+
+export const debtComparisonLLMResponseSchema = z.object({
+  explanation: z.string().min(1),
+});
+
+// ------------------------------------------------------------
+// 6. Auth Schemas
 // ------------------------------------------------------------
 export const authCredentialsSchema = z.object({
   email: z.string().email("Invalid email address"),

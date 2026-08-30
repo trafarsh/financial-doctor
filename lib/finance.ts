@@ -12,8 +12,30 @@ import {
   RiskFactor,
   SimulationAssumption,
   SimulationYearlyPoint,
+  DebtComparisonInput,
+  FormalLoanBenchmark,
 } from "./types";
 import { APP_CONFIG } from "./config";
+
+// Publicly published benchmark rates for formal rural credit (illustrative,
+// re-verify against current RBI/NABARD circulars before external use).
+export const FORMAL_DEBT_BENCHMARKS: FormalLoanBenchmark[] = [
+  {
+    name: "Kisan Credit Card (KCC)",
+    annualRatePct: 7,
+    sourceNote: "Interest subvention scheme effective rate for prompt repayment, up to ₹3 lakh",
+  },
+  {
+    name: "Cooperative Bank Crop Loan",
+    annualRatePct: 11,
+    sourceNote: "Typical published rate for short-term cooperative agricultural credit",
+  },
+  {
+    name: "SHG / JLG Group Lending",
+    annualRatePct: 14,
+    sourceNote: "Typical rotating-credit rate reported within NABARD-linked SHG programs",
+  },
+];
 
 /**
  * 1. Computes aggregate asset value, liability value, and net worth
@@ -356,7 +378,60 @@ export function projectNetWorth(
 }
 
 /**
- * 6. Combined Full Financial Health Assessment
+ * 6. Effective Annual Rate & Cost Comparison for Informal Rural Debt
+ * Converts an informal repayment arrangement (e.g. "₹500 extra per ₹5,000 per
+ * month") into a standardized effective annual interest rate, then compares
+ * total cost against published formal-lending benchmarks over the same term
+ * and principal. Pure TS — no LLM involved in any of these numbers.
+ */
+export function computeDebtComparison(
+  input: DebtComparisonInput,
+  benchmarks: FormalLoanBenchmark[] = FORMAL_DEBT_BENCHMARKS
+): {
+  effectiveAnnualRatePct: number;
+  totalInformalCost: number;
+  benchmarks: (FormalLoanBenchmark & { totalFormalCost: number; savingsVsInformal: number })[];
+} {
+  const { principal, informalCharge, chargeUnit, termMonths } = input;
+
+  if (principal <= 0 || termMonths <= 0) {
+    return { effectiveAnnualRatePct: 0, totalInformalCost: 0, benchmarks: [] };
+  }
+
+  // Normalize the informal charge into a total cost paid over the full term,
+  // then annualize it as simple interest on the principal (the standard way
+  // rural moneylender terms are converted for comparison purposes).
+  let totalInformalCost: number;
+  if (chargeUnit === "per_month") {
+    totalInformalCost = informalCharge * termMonths;
+  } else if (chargeUnit === "per_week") {
+    const weeksInTerm = (termMonths * 52) / 12;
+    totalInformalCost = informalCharge * weeksInTerm;
+  } else {
+    totalInformalCost = informalCharge;
+  }
+
+  const years = termMonths / 12;
+  const effectiveAnnualRatePct = years > 0 ? (totalInformalCost / principal / years) * 100 : 0;
+
+  const benchmarkResults = benchmarks.map((b) => {
+    const totalFormalCost = principal * (b.annualRatePct / 100) * years;
+    return {
+      ...b,
+      totalFormalCost: Math.round(totalFormalCost),
+      savingsVsInformal: Math.round(totalInformalCost - totalFormalCost),
+    };
+  });
+
+  return {
+    effectiveAnnualRatePct: Math.round(effectiveAnnualRatePct * 10) / 10,
+    totalInformalCost: Math.round(totalInformalCost),
+    benchmarks: benchmarkResults,
+  };
+}
+
+/**
+ * 7. Combined Full Financial Health Assessment
  */
 export function analyzeFullRisk(
   userId: string,

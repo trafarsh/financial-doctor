@@ -411,6 +411,32 @@ export interface AuditLog {
 }
 
 // ------------------------------------------------------------
+// 13. Rural Debt Comparison (Informal vs. Formal Lending)
+// ------------------------------------------------------------
+export type InformalRepaymentUnit = "per_month" | "per_week" | "lump_sum";
+
+export interface DebtComparisonInput {
+  principal: number;                    // ₹ borrowed
+  informalCharge: number;               // ₹ extra paid per unit period (or total extra for lump_sum)
+  chargeUnit: InformalRepaymentUnit;
+  termMonths: number;                   // total repayment horizon in months
+}
+
+export interface FormalLoanBenchmark {
+  name: string;                         // e.g. "Kisan Credit Card (KCC)"
+  annualRatePct: number;                // published effective annual rate
+  sourceNote: string;                   // where the benchmark rate comes from
+}
+
+export interface DebtComparisonResult {
+  input: DebtComparisonInput;
+  effectiveAnnualRatePct: number;       // computed from the informal arrangement
+  totalInformalCost: number;            // ₹ total interest/charges paid over termMonths
+  benchmarks: (FormalLoanBenchmark & { totalFormalCost: number; savingsVsInformal: number })[];
+  explanation: string;                  // Non-advisory plain-language framing
+}
+
+// ------------------------------------------------------------
 // 13. Reports
 // ------------------------------------------------------------
 export interface ComprehensiveReport {
