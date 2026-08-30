@@ -34,7 +34,7 @@ export default function RootLayout({
         <footer className="w-full bg-surface border-t-2 border-divider py-8 text-center text-xs text-ink/55">
           <div className="max-w-7xl mx-auto px-4 space-y-2">
             <p className="font-semibold text-ink">
-              Financial Doctor (finX) — Educational Decision-Support Platform
+              α-Financial Doctor (finX) — Educational Decision-Support Platform
             </p>
             <p>
               Not a registered investment adviser. Never provides personalized buy/sell directives. All money arithmetic is deterministic.

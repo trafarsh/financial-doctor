@@ -12,7 +12,7 @@ export const APP_CONFIG = {
   // Compliance & Disclaimers
   disclaimer: {
     persistent:
-      "financial-doctor is a financial-literacy tool, not a registered investment adviser. It does not provide personalized investment advice.",
+      "α-financial-doctor is a financial-literacy tool, not a registered investment adviser. It does not provide personalized investment advice.",
     simulation:
       "Illustrative scenario based on deterministic models. Not a prediction, guarantee, or investment advice.",
     scamZeroSource:
