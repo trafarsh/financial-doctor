@@ -99,7 +99,7 @@ export default function DashboardPage() {
   }));
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-8 w-full">
+    <div className="flex flex-col gap-6 px-8 py-8 w-full max-w-6xl">
       {/* Header & Quick Action Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-divider pb-4">
         <div>

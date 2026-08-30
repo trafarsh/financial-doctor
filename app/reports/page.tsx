@@ -23,9 +23,9 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-6 px-8 py-8 w-full max-w-4xl">
       {/* Topbar */}
-      <div className="flex items-center gap-4 pb-4 border-b-2 border-divider mb-8">
+      <div className="flex items-center gap-4 pb-4 border-b-2 border-divider">
         <div className="kicker">Portfolio report</div>
         <div className="ml-auto flex gap-2">
           <button onClick={handlePrint} className="btn btn-secondary">
@@ -41,7 +41,7 @@ export default function ReportsPage() {
       {loading && <div className="kicker">Loading report…</div>}
 
       {report && (
-        <div className="bg-neutral-200 -mx-6 px-6 py-8 sm:-mx-8 sm:px-8">
+        <div className="bg-neutral-200 border-2 border-divider px-6 py-8 sm:px-8">
           <div className="max-w-[860px] mx-auto bg-bg border-2 border-divider px-8 py-14 sm:px-16">
             {/* Report header */}
             <div className="kicker-accent mb-3">finX Portfolio report</div>

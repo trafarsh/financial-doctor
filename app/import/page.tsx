@@ -266,7 +266,7 @@ export default function ImportPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto px-4 py-12">
+    <div className="flex flex-col gap-6 px-8 py-8 w-full max-w-6xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-divider pb-4">
         <div>

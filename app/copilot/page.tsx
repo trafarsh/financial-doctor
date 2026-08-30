@@ -79,7 +79,7 @@ export default function CopilotPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Topbar */}
-      <div className="flex items-center gap-4 px-7 py-3.5 border-b-2 border-divider">
+      <div className="flex items-center gap-4 px-8 py-4 border-b-2 border-divider">
         <div className="font-heading font-800 text-base flex items-center gap-2">
           <Cpu className="w-4 h-4 text-accent" />
           Copilot

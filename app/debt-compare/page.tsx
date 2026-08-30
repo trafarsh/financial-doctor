@@ -47,7 +47,7 @@ export default function DebtComparePage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-8 w-full">
+    <div className="flex flex-col gap-6 px-8 py-8 w-full max-w-6xl">
       <div className="border-b-2 border-divider pb-4">
         <h1 className="text-3xl font-heading font-800 text-ink m-0 flex items-center gap-2.5">
           <Sprout className="w-7 h-7 text-accent" />
