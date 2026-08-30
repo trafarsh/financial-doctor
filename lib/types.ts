@@ -467,6 +467,7 @@ export interface ComprehensiveReport {
 // 14. Government Scheme Eligibility Engine
 // ------------------------------------------------------------
 export interface HouseholdProfile {
+  state: string;
   district: string;
   landHoldingHa: number;
   primaryCrop: string;
@@ -492,6 +493,8 @@ export interface GovernmentScheme {
     socialCategories?: string[];
     primaryCrops?: string[];
     requiresNoKcc?: boolean;
+    requiresKcc?: boolean;
+    requiredState?: string;
     requiredDistricts?: string[];
   };
 }

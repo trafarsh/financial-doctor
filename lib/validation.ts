@@ -169,6 +169,7 @@ export const authCredentialsSchema = z.object({
 // 7. Government Scheme Eligibility Engine Schemas
 // ------------------------------------------------------------
 export const householdProfileSchema = z.object({
+  state: z.string().min(1, "State is required"),
   district: z.string().min(1, "District is required"),
   landHoldingHa: z.number().nonnegative("Land holding must be 0 or positive"),
   primaryCrop: z.string().min(1, "Primary crop is required"),

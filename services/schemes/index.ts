@@ -59,9 +59,80 @@ export const CURATED_SCHEMES: GovernmentScheme[] = [
     lastVerified: "2026-08-10",
     sourceUrl: "https://www.tnhorticulture.tn.gov.in",
     eligibilityRules: {
+      requiredState: "Tamil Nadu",
       primaryCrops: ["mango"],
-      requiredDistricts: ["krishnagiri", "salem", "dharmapuri", "vellore"],
       maxLandHa: 4.0,
+    },
+  },
+  {
+    id: "SCH-RYTHUBANDHU",
+    name: "Rythu Bandhu Investment Support",
+    agency: "Telangana State Government",
+    benefitDescription: "Financial assistance of ₹10,000 per acre per year direct to bank account for purchasing farm inputs (seeds, fertilizers).",
+    estimatedBenefitAmount: 25000, // estimated for 2.5 acres
+    requiredDocuments: ["Aadhaar Card", "Pattadar Passbook (Rythu Bandhu Card)", "Bank Account Link Passbook"],
+    lastVerified: "2026-07-25",
+    sourceUrl: "http://rythubandhu.telangana.gov.in",
+    eligibilityRules: {
+      requiredState: "Telangana",
+      maxLandHa: 10.0,
+    },
+  },
+  {
+    id: "SCH-KALIA",
+    name: "KALIA Livelihood Support Scheme",
+    agency: "Odisha State Government",
+    benefitDescription: "Financial support of ₹10,000 per family per year for buying farming seeds, fertilizers, and pesticides.",
+    estimatedBenefitAmount: 10000,
+    requiredDocuments: ["Aadhaar Card", "Land Record Copy", "Income Certificate", "Active Bank Passbook"],
+    lastVerified: "2026-08-01",
+    sourceUrl: "https://kalia.odisha.gov.in",
+    eligibilityRules: {
+      requiredState: "Odisha",
+      maxLandHa: 2.0,
+      maxIncome: 150000,
+    },
+  },
+  {
+    id: "SCH-RYTHUBHAROSA",
+    name: "YSR Rythu Bharosa Support",
+    agency: "Andhra Pradesh State Government",
+    benefitDescription: "Investment support of ₹13,500 per year (combined with PM-KISAN) for landowning and tenant farming families.",
+    estimatedBenefitAmount: 13500,
+    requiredDocuments: ["Rythu Bharosa Card", "Land Patta or Tenant Cultivation Agreement", "Aadhaar Card", "Bank Account"],
+    lastVerified: "2026-08-12",
+    sourceUrl: "https://ysrrythubharosa.ap.gov.in",
+    eligibilityRules: {
+      requiredState: "Andhra Pradesh",
+      maxLandHa: 3.0,
+    },
+  },
+  {
+    id: "SCH-MJPSKLW",
+    name: "Mahatma Jyotirao Phule Crop Loan Waiver Scheme",
+    agency: "Maharashtra State Government",
+    benefitDescription: "Crop loan waiver up to ₹2,00,000 for distressed farmers holding outstanding loan accounts in cooperative/public banks.",
+    estimatedBenefitAmount: 150000, // typical waiver benefit scale
+    requiredDocuments: ["KCC Loan Passbook", "Outstanding Loan Account statement", "Aadhaar Card", "Cooperative Bank certificate"],
+    lastVerified: "2026-06-15",
+    sourceUrl: "https://mjpsky.maharashtra.gov.in",
+    eligibilityRules: {
+      requiredState: "Maharashtra",
+      requiresKcc: true,
+    },
+  },
+  {
+    id: "SCH-CRMSUBSIDY",
+    name: "Crop Residue Management (CRM) Subsidy",
+    agency: "Punjab State Government / Central Govt",
+    benefitDescription: "50% to 80% capital subsidy on buying residue management machinery (Happy Seeder, Mulcher, Smart Seeder) to prevent stubble burning.",
+    estimatedBenefitAmount: 45000, // average machinery subsidy savings
+    requiredDocuments: ["Aadhaar/PAN card", "Land ownership proof", "Machinery Proforma Invoice", "Agriculture Department Approval Letter"],
+    lastVerified: "2026-08-20",
+    sourceUrl: "https://agri.punjab.gov.in",
+    eligibilityRules: {
+      requiredState: "Punjab",
+      primaryCrops: ["wheat", "rice"],
     },
   },
   {
@@ -69,7 +140,7 @@ export const CURATED_SCHEMES: GovernmentScheme[] = [
     name: "PM Jan Dhan Yojana Accidental Insurance Cover",
     agency: "Central Government",
     benefitDescription: "Free accidental insurance cover up to ₹2 Lakhs linked to a basic RuPay debit card and JDY zero-balance account.",
-    estimatedBenefitAmount: 2000, // estimated implicit insurance value
+    estimatedBenefitAmount: 2000,
     requiredDocuments: ["Aadhaar Card", "Voter ID or NREGA Job Card", "RuPay Card details"],
     lastVerified: "2026-05-01",
     sourceUrl: "https://www.pmjdy.gov.in",
@@ -82,12 +153,12 @@ export const CURATED_SCHEMES: GovernmentScheme[] = [
     name: "PMFBY (Pradhan Mantri Fasal Bima Yojana)",
     agency: "Central Government",
     benefitDescription: "Low-premium crop insurance protecting against crop loss due to drought, monsoon failure, pests, or disease.",
-    estimatedBenefitAmount: 8000, // illustrative coverage yield value
+    estimatedBenefitAmount: 8000,
     requiredDocuments: ["Land Record (Patta/Sowing Certificate)", "Bank Passbook Copy", "Sowing Certificate from VAO"],
     lastVerified: "2026-08-01",
     sourceUrl: "https://pmfby.gov.in",
     eligibilityRules: {
-      primaryCrops: ["mango", "ragi", "rice", "cotton", "sugarcane", "maize"],
+      primaryCrops: ["mango", "ragi", "rice", "cotton", "sugarcane", "maize", "wheat"],
     },
   },
 ];
@@ -100,16 +171,34 @@ export class SchemesService {
       const failingCriteria: string[] = [];
       const rules = scheme.eligibilityRules;
 
-      // 1. Max Land Check
+      // 1. Required State Check
+      if (rules.requiredState !== undefined) {
+        if ((profile.state || "").toLowerCase() === rules.requiredState.toLowerCase()) {
+          matchingCriteria.push(`State is "${profile.state}" (matches required ${rules.requiredState})`);
+        } else {
+          failingCriteria.push(`State is "${profile.state}" (requires "${rules.requiredState}")`);
+        }
+      }
+
+      // 2. Requires KCC Check
+      if (rules.requiresKcc !== undefined && rules.requiresKcc) {
+        if (profile.existingKcc) {
+          matchingCriteria.push(`Household holds an active Kisan Credit Card (KCC)`);
+        } else {
+          failingCriteria.push(`Household does not hold a Kisan Credit Card (KCC)`);
+        }
+      }
+
+      // 3. Max Land Check
       if (rules.maxLandHa !== undefined) {
         if (profile.landHoldingHa <= rules.maxLandHa) {
-          matchingCriteria.push(`Land holding ${profile.landHoldingHa} ha is below maximum allowed ${rules.maxLandHa} ha`);
+          matchingCriteria.push(`Land holding ${profile.landHoldingHa} ha is within maximum limit of ${rules.maxLandHa} ha`);
         } else {
           failingCriteria.push(`Land holding ${profile.landHoldingHa} ha exceeds maximum allowed ${rules.maxLandHa} ha`);
         }
       }
 
-      // 2. Min Land Check
+      // 4. Min Land Check
       if (rules.minLandHa !== undefined) {
         if (profile.landHoldingHa >= rules.minLandHa) {
           matchingCriteria.push(`Land holding ${profile.landHoldingHa} ha is above minimum required ${rules.minLandHa} ha`);
@@ -118,7 +207,7 @@ export class SchemesService {
         }
       }
 
-      // 3. Max Income Check
+      // 5. Max Income Check
       if (rules.maxIncome !== undefined) {
         if (profile.annualIncome <= rules.maxIncome) {
           matchingCriteria.push(`Annual income ₹${profile.annualIncome.toLocaleString("en-IN")} is within limit of ₹${rules.maxIncome.toLocaleString("en-IN")}`);
@@ -127,7 +216,7 @@ export class SchemesService {
         }
       }
 
-      // 4. Social Categories Check
+      // 6. Social Categories Check
       if (rules.socialCategories !== undefined) {
         const catMatch = rules.socialCategories.includes(profile.socialCategory);
         if (catMatch) {
@@ -137,7 +226,7 @@ export class SchemesService {
         }
       }
 
-      // 5. Primary Crops Check
+      // 7. Primary Crops Check
       if (rules.primaryCrops !== undefined) {
         const cropMatch = rules.primaryCrops.map((c) => c.toLowerCase()).includes(profile.primaryCrop.toLowerCase());
         if (cropMatch) {
@@ -147,7 +236,7 @@ export class SchemesService {
         }
       }
 
-      // 6. Requires No KCC Check
+      // 8. Requires No KCC Check
       if (rules.requiresNoKcc !== undefined && rules.requiresNoKcc) {
         if (!profile.existingKcc) {
           matchingCriteria.push(`Household does not hold an existing Kisan Credit Card`);
@@ -156,7 +245,7 @@ export class SchemesService {
         }
       }
 
-      // 7. Required Districts Check
+      // 9. Required Districts Check
       if (rules.requiredDistricts !== undefined) {
         const distMatch = rules.requiredDistricts.map((d) => d.toLowerCase()).includes(profile.district.toLowerCase());
         if (distMatch) {
@@ -166,7 +255,6 @@ export class SchemesService {
         }
       }
 
-      // If there are no failing criteria, then eligible!
       const isEligible = failingCriteria.length === 0;
 
       return {
@@ -176,7 +264,6 @@ export class SchemesService {
         failingCriteria,
       };
     }).sort((a, b) => {
-      // Sort eligible schemes first, then by estimated benefit amount descending
       if (a.isEligible && !b.isEligible) return -1;
       if (!a.isEligible && b.isEligible) return 1;
       return b.scheme.estimatedBenefitAmount - a.scheme.estimatedBenefitAmount;
@@ -200,13 +287,14 @@ You are finX, an educational decision support system. Draft a 3-sentence summary
 Rules:
 - State clearly how many schemes the user eligible for (${eligibleCount} out of ${matches.length} analyzed schemes).
 - Mention key eligible schemes (such as: ${eligibleSchemeNames || "None"}).
-- Instruct the user to consult their local village administrative officer (VAO), panchayat office, or bank branch to verify eligibility and make submissions.
+- Instruct the user to consult their local village administrative officer (VAO), Panchayat, Krishi Vigyan Kendra, or bank branch to verify eligibility.
 - Strictly emphasize that this is for educational informational purposes and not a legal or official guarantee of funding.
 - Output JSON: { "explanation": string }
 `;
 
     const userPrompt = `
 HOUSEHOLD PROFILE:
+- State: ${profile.state}
 - District: ${profile.district}
 - Land Holding: ${profile.landHoldingHa} Hectares
 - Primary Crop: ${profile.primaryCrop}
@@ -218,9 +306,9 @@ ELIGIBLE SCHEMES COUNT: ${eligibleCount}
 INELIGIBLE SCHEMES COUNT: ${matches.length - eligibleCount}
 `;
 
-    const fallbackExplanation = `Based on your profile, you are eligible for ${eligibleCount} out of ${matches.length} evaluated schemes${
+    const fallbackExplanation = `Based on your profile in ${profile.district}, ${profile.state}, you are eligible for ${eligibleCount} out of ${matches.length} evaluated schemes${
       eligibleCount > 0 ? ` (including ${eligibleSchemeNames})` : ""
-    }. Please download the document checklists and consult your local panchayat secretary or bank officer to verify the official rules. This dashboard provides educational analysis and is not an official guarantee of acceptance.`;
+    }. Please download the document checklists and consult your local village officer or bank representative. This dashboard provides educational analysis and is not an official guarantee of acceptance.`;
 
     try {
       const { data } = await callLLM<{ explanation: string }>({

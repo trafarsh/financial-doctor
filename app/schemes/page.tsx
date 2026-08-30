@@ -15,22 +15,13 @@ import {
   RefreshCw
 } from "lucide-react";
 import { HouseholdProfile, SchemeMatchResult } from "@/lib/types";
-
-const DISTRICTS = [
-  "Krishnagiri",
-  "Salem",
-  "Dharmapuri",
-  "Vellore",
-  "Coimbatore",
-  "Madurai",
-  "Tiruchirappalli",
-  "Thanjavur"
-];
+import statesDistrictsData from "@/lib/states-districts.json";
 
 const CROPS = [
   "Mango",
   "Ragi",
   "Rice",
+  "Wheat",
   "Cotton",
   "Sugarcane",
   "Maize",
@@ -39,6 +30,7 @@ const CROPS = [
 ];
 
 const DEFAULT_PROFILE: HouseholdProfile = {
+  state: "Tamil Nadu",
   district: "Krishnagiri",
   landHoldingHa: 1.5,
   primaryCrop: "Mango",
@@ -63,6 +55,12 @@ export default function SchemesPage() {
   // Voice simulation state
   const [voiceActive, setVoiceActive] = useState<boolean>(false);
   const [voiceText, setVoiceText] = useState<string>("");
+
+  // Get active districts based on selected state
+  const activeStateObj = statesDistrictsData.states.find(
+    (s) => s.state.toLowerCase() === profile.state.toLowerCase()
+  );
+  const districts = activeStateObj ? activeStateObj.districts : [];
 
   const triggerEvaluation = useCallback(async (currentProfile: HouseholdProfile) => {
     setLoading(true);
@@ -100,7 +98,17 @@ export default function SchemesPage() {
   }, [triggerEvaluation]);
 
   const handleInputChange = (field: keyof HouseholdProfile, value: any) => {
-    setProfile((prev) => ({ ...prev, [field]: value }));
+    setProfile((prev) => {
+      const updated = { ...prev, [field]: value };
+      // If state changes, reset district to the first one in that state
+      if (field === "state") {
+        const stateObj = statesDistrictsData.states.find(
+          (s) => s.state.toLowerCase() === value.toLowerCase()
+        );
+        updated.district = stateObj && stateObj.districts[0] ? stateObj.districts[0] : "";
+      }
+      return updated;
+    });
   };
 
   const toggleDoc = (schemeId: string, doc: string) => {
@@ -130,25 +138,26 @@ export default function SchemesPage() {
 
     // Simulate speech recognition results sequentially
     setTimeout(() => {
-      setVoiceText('"I grow mangoes in Krishnagiri..."');
+      setVoiceText('"I am a wheat farmer in Ludhiana, Punjab..."');
     }, 1200);
 
     setTimeout(() => {
-      setVoiceText('"I have 1.8 hectares of land and no KCC card..."');
+      setVoiceText('"I farm on 3.5 hectares of land with KCC active..."');
     }, 2800);
 
     setTimeout(() => {
       const voiceParsedProfile: HouseholdProfile = {
-        district: "Krishnagiri",
-        landHoldingHa: 1.8,
-        primaryCrop: "Mango",
-        annualIncome: 140000,
-        socialCategory: "OBC",
-        familySize: 5,
-        existingKcc: false
+        state: "Punjab",
+        district: "Ludhiana",
+        landHoldingHa: 3.5,
+        primaryCrop: "Wheat",
+        annualIncome: 180000,
+        socialCategory: "General",
+        familySize: 6,
+        existingKcc: true
       };
       setProfile(voiceParsedProfile);
-      setVoiceText("Voice query successfully parsed and applied!");
+      setVoiceText("Voice query successfully parsed and applied (Ludhiana, Punjab Wheat profile active)!");
       setVoiceActive(false);
       triggerEvaluation(voiceParsedProfile);
     }, 4500);
@@ -159,7 +168,7 @@ export default function SchemesPage() {
       {/* Header */}
       <div className="border-b-2 border-divider pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="kicker">Rural Support Engine</div>
+          <div className="kicker">Rural Support Engine (All India Coverage)</div>
           <h1 className="text-3xl font-heading font-extrabold text-ink m-0 flex items-center gap-2.5 mt-1">
             <Sprout className="w-7 h-7 text-accent" />
             Scheme Eligibility Matcher
@@ -204,11 +213,32 @@ export default function SchemesPage() {
             Household Profile Wizard
           </h2>
 
+          {/* State Select */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold uppercase text-ink/75 flex items-center gap-1">
+              State
+              <span className="tooltip cursor-help" title="Select your State to search regional and national schemes">
+                <HelpCircle className="w-3.5 h-3.5 text-muted" />
+              </span>
+            </label>
+            <select
+              value={profile.state}
+              onChange={(e) => handleInputChange("state", e.target.value)}
+              className="form-input bg-bg text-ink"
+            >
+              {statesDistrictsData.states.map((s) => (
+                <option key={s.state} value={s.state}>
+                  {s.state}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* District Select */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold uppercase text-ink/75 flex items-center gap-1">
               District
-              <span className="tooltip cursor-help" title="Determines state-specific scheme eligibility">
+              <span className="tooltip cursor-help" title="Search all 700+ districts matching your selected state">
                 <HelpCircle className="w-3.5 h-3.5 text-muted" />
               </span>
             </label>
@@ -217,7 +247,7 @@ export default function SchemesPage() {
               onChange={(e) => handleInputChange("district", e.target.value)}
               className="form-input bg-bg text-ink"
             >
-              {DISTRICTS.map((d) => (
+              {districts.map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
@@ -340,7 +370,7 @@ export default function SchemesPage() {
             />
             <div>
               <div className="text-xs font-bold text-ink">Already has Kisan Credit Card (KCC)?</div>
-              <div className="text-[10px] text-ink/50">Excludes you from other initial credit lines.</div>
+              <div className="text-[10px] text-ink/50">Waivers require KCC; standard loans require no card.</div>
             </div>
           </label>
 
@@ -437,12 +467,12 @@ export default function SchemesPage() {
                           </span>
                           {isEligible ? (
                             <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                               Eligible
                             </span>
                           ) : (
                             <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 bg-neutral-100 text-neutral-600 border border-neutral-300 flex items-center gap-1">
-                              <XCircle className="w-3 h-3 text-neutral-500" />
+                              <XCircle className="w-3.5 h-3.5 text-neutral-500" />
                               Ineligible
                             </span>
                           )}
